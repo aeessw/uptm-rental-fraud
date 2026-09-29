@@ -46,9 +46,10 @@
 <!-- Font Awesome -->
 <link
     rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous"
 >
 
+    <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
 </head>
 
 <body class="bg-slate-50/80 font-sans antialiased text-slate-800">
@@ -62,92 +63,41 @@
 
 <!-- ================= MAIN CONTENT ================= -->
 
-<main class="ml-0 min-w-0 md:ml-64">
+<main class="ml-0 min-w-0 md:ml-[280px]">
 
 
     <!-- ================= HEADER ================= -->
 
-    <header
-        class="sticky top-0 z-40 flex items-center justify-between
-               border-b border-slate-200/60
-               bg-white/90 px-8 py-4
-               backdrop-blur-md"
-    >
 
-        <div>
-
-            <h2 class="text-base font-bold tracking-tight text-slate-900">
-                Student Accounts
-            </h2>
-
-
-        </div>
-
-
-        <!-- MPP PROFILE -->
-
-        <div class="flex items-center space-x-3">
-
-            <div class="text-right">
-
-                <div class="mb-0.5 text-xs font-bold leading-none text-slate-900">
-                    {{ Auth::user()->name }}
-                </div>
-
-                <div class="text-[11px] font-medium leading-none text-slate-400">
-                    {{ Auth::user()->email }}
-                </div>
-
-            </div>
-
-
-            <div
-                class="flex h-9 w-9 items-center justify-center
-                       rounded-full border border-brand-100
-                       bg-brand-50 text-xs font-bold uppercase
-                       text-brand-600 ring-2 ring-brand-500/10"
-            >
-
-                {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
-
-            </div>
-
-        </div>
-
-    </header>
 
 
 
     <!-- ================= PAGE CONTENT ================= -->
 
-    <div class="space-y-6 p-8">
+    <div class="mpp-page-content space-y-4 p-4 md:p-6">
+        @include('mpp.page-heading', ['title' => 'Student Accounts', 'description' => 'Review student accounts, reports received, and account status.'])
 
 
 
 
+        @if($errors->any())
+            <div role="alert" class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700">{{ $errors->first() }} Please reopen the suspension form to correct it.</div>
+        @endif
         <!-- SUCCESS MESSAGE -->
 
         @if(session('success'))
-
-            <div
-                class="flex items-center space-x-2.5
-                       rounded-xl border border-emerald-500/20
-                       bg-emerald-500/10 p-4
-                       text-xs font-semibold text-emerald-800"
-            >
-
-                <i class="fa-solid fa-circle-check text-emerald-600"></i>
-
-                <span>
-                    {{ session('success') }}
-                </span>
-
-            </div>
-
+            <script>
+                window.alert(@json(session('success')));
+            </script>
         @endif
 
 
 
+        <div class="grid gap-3 sm:grid-cols-3" aria-label="Student account summary">
+            @foreach(['Total Students' => $users->count(), 'Active' => $users->where('user_suspended', false)->count(), 'Suspended' => $users->where('user_suspended', true)->count()] as $label => $count)
+                <div class="rounded-xl border border-slate-200 bg-white px-5 py-4"><p class="text-sm text-slate-500">{{ $label }}</p><p class="mt-1 text-lg font-semibold text-slate-900">{{ $count }}</p></div>
+            @endforeach
+        </div>
         <!-- ================= FILTER ================= -->
 
         <section
@@ -162,7 +112,7 @@
 
                 <!-- SEARCH -->
 
-                <div class="relative w-full sm:max-w-sm">
+                <div class="relative w-full min-w-0 sm:flex-1">
 
                     <i
                         class="fa-solid fa-magnifying-glass
@@ -174,6 +124,7 @@
                     <input
                         type="text"
                         id="studentSearch"
+                        aria-label="Search students by name or email"
                         placeholder="Search name or email..."
                         class="w-full rounded-xl
                                border border-slate-200
@@ -197,6 +148,7 @@
 
                 <select
                     id="statusFilter"
+                    aria-label="Filter students by status"
                     class="rounded-xl
                            border border-slate-200
                            bg-slate-50
@@ -210,7 +162,7 @@
                 >
 
                     <option value="all">
-                        All Students
+                        All Status
                     </option>
 
                     <option value="active">
@@ -276,7 +228,7 @@
                                            uppercase tracking-wider
                                            text-slate-500"
                                 >
-                                    Role
+                                    Listings
                                 </th>
 
                                 <th
@@ -289,12 +241,21 @@
                                 </th>
 
                                 <th
+                                    class="px-6 py-4
+                                           text-[10px] font-bold
+                                           uppercase tracking-wider
+                                           text-slate-500"
+                                >
+                                    Reports Received
+                                </th>
+
+                                <th
                                     class="px-6 py-4 text-right
                                            text-[10px] font-bold
                                            uppercase tracking-wider
                                            text-slate-500"
                                 >
-                                    Action
+                                    Actions
                                 </th>
 
                             </tr>
@@ -310,9 +271,9 @@
 
                                 <tr
                                     class="student-row transition hover:bg-slate-50"
-                                    data-name="{{ strtolower($user->name) }}"
-                                    data-email="{{ strtolower($user->email) }}"
-                                    data-status="{{ $user->suspended ? 'suspended' : 'active' }}"
+                                    data-name="{{ strtolower($user->user_name) }}"
+                                    data-email="{{ strtolower($user->user_email) }}"
+                                    data-status="{{ $user->user_suspended ? 'suspended' : 'active' }}"
                                 >
 
 
@@ -332,7 +293,7 @@
                                                        text-brand-600"
                                             >
 
-                                                {{ strtoupper(substr($user->name, 0, 2)) }}
+                                                {{ strtoupper(substr($user->user_name, 0, 2)) }}
 
                                             </div>
 
@@ -345,7 +306,7 @@
                                                            text-slate-800"
                                                 >
 
-                                                    {{ $user->name }}
+                                                    {{ $user->user_name }}
 
                                                 </p>
 
@@ -366,7 +327,7 @@
                                                    text-slate-600"
                                         >
 
-                                            {{ $user->email }}
+                                            {{ $user->user_email }}
 
                                         </p>
 
@@ -374,34 +335,13 @@
 
 
 
-                                    <!-- ROLE -->
-
-                                    <td class="px-6 py-4">
-
-                                        <span
-                                            class="inline-flex
-                                                   rounded-full
-                                                   bg-slate-100
-                                                   px-2.5 py-1
-                                                   text-[10px]
-                                                   font-bold
-                                                   uppercase
-                                                   text-slate-600"
-                                        >
-
-                                            {{ $user->role }}
-
-                                        </span>
-
-                                    </td>
-
-
+                                    <td class="px-6 py-4"><a class="font-semibold text-indigo-600" href="{{ route('mpp.listings', ['user_id' => $user->getKey()]) }}" aria-label="View listings by {{ $user->user_name }}">{{ $user->listings_count }}</a></td>
 
                                     <!-- STATUS -->
 
                                     <td class="px-6 py-4">
 
-                                        @if($user->suspended)
+                                        @if($user->user_suspended)
 
                                             <span
                                                 class="inline-flex items-center gap-1.5
@@ -449,84 +389,30 @@
 
                                     </td>
 
+                                    <!-- REPORT COUNT -->
+
+                                    <td class="px-6 py-4">
+                                        <a href="{{ route('mpp.reports', ['user_id' => $user->getKey()]) }}" aria-label="View reports received by {{ $user->user_name }}" class="inline-flex items-center gap-1.5 rounded-full {{ $user->received_reports_count > 3 ? 'bg-rose-100 text-rose-700' : ($user->received_reports_count > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500') }} px-2.5 py-1 text-[10px] font-bold">
+                                            <i class="fa-solid fa-flag"></i>
+                                            {{ $user->received_reports_count }}
+                                        </a>
+                                    </td>
 
 
-                                    <!-- ACTION -->
 
-                                    <td class="px-6 py-4 text-right">
-
-                                        @if(!$user->suspended)
-
-                                            <form
-                                                action="{{ route('mpp.users.suspend', $user->id) }}"
-                                                method="POST"
-                                                class="inline"
-                                            >
-
-                                                @csrf
-
-                                                <button
-                                                    type="submit"
-                                                    class="rounded-lg
-                                                           bg-rose-50
-                                                           px-3 py-2
-                                                           text-[10px]
-                                                           font-bold
-                                                           text-rose-600
-                                                           transition
-                                                           hover:bg-rose-100"
-                                                    onclick="return confirm('Are you sure you want to suspend this student account?')"
-                                                >
-
-                                                    <i
-                                                        class="fa-solid
-                                                               fa-user-slash
-                                                               mr-1"
-                                                    ></i>
-
-                                                    Suspend
-
-                                                </button>
-
-                                            </form>
-
-                                        @else
-
-                                            <form
-                                                action="{{ route('mpp.users.unsuspend', $user->id) }}"
-                                                method="POST"
-                                                class="inline"
-                                            >
-
-                                                @csrf
-
-                                                <button
-                                                    type="submit"
-                                                    class="rounded-lg
-                                                           bg-emerald-50
-                                                           px-3 py-2
-                                                           text-[10px]
-                                                           font-bold
-                                                           text-emerald-600
-                                                           transition
-                                                           hover:bg-emerald-100"
-                                                    onclick="return confirm('Restore this student account?')"
-                                                >
-
-                                                    <i
-                                                        class="fa-solid
-                                                               fa-user-check
-                                                               mr-1"
-                                                    ></i>
-
-                                                    Restore
-
-                                                </button>
-
-                                            </form>
-
-                                        @endif
-
+                                    <!-- Consistent row actions; report history is linked in its own column. -->
+                                    <td class="px-6 py-4">
+                                        <div class="student-row-actions">
+                                            <a class="student-action student-action-view" href="{{ route('mpp.students.show', $user->getKey()) }}" data-student-details="{{ $user->getKey() }}">View Student</a>
+                                            @if(!$user->user_suspended)
+                                                <button type="button" class="student-action student-action-suspend" onclick="document.getElementById('suspend-student-{{ $user->getKey() }}').showModal()">Suspend</button>
+                                            @else
+                                                <form action="{{ route('mpp.users.unsuspend', $user->getKey()) }}" method="POST">
+                                                    @csrf
+                                                    <button type="submit" class="student-action student-action-restore" onclick="return confirm('Restore this student account?')">Unsuspend</button>
+                                                </form>
+                                            @endif
+                                        </div>
                                     </td>
 
                                 </tr>
@@ -599,77 +485,67 @@
 
             @endif
 
+            <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-4">
+                <p id="studentPageSummary" role="status" aria-live="polite" class="text-sm text-slate-500"></p>
+                <nav aria-label="Student result pages" class="flex items-center gap-2"><button type="button" id="studentPrevious" class="rounded-lg border border-slate-200 px-3 py-2 text-sm disabled:opacity-40">Previous</button><span id="studentPageNumber" class="text-sm text-slate-500"></span><button type="button" id="studentNext" class="rounded-lg border border-slate-200 px-3 py-2 text-sm disabled:opacity-40">Next</button></nav>
+            </div>
         </section>
 
     </div>
 
 </main>
-```
 
 </div>
+
+@include('mpp.student-details')
+<script>
+(() => {
+    const openStudent = (id) => {
+        const dialog = document.getElementById(`student-details-${id}`);
+        if (dialog) dialog.showModal();
+    };
+    document.querySelectorAll('[data-student-details]').forEach((link) => {
+        link.addEventListener('click', (event) => {
+            if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            openStudent(link.dataset.studentDetails);
+        });
+    });
+    const selected = new URLSearchParams(window.location.search).get('student');
+    if (selected && /^\d+$/.test(selected)) openStudent(selected);
+})();
+</script>
 
 <!-- ================= FILTER SCRIPT ================= -->
 
 <script>
-
-    const searchInput = document.getElementById('studentSearch');
-    const statusFilter = document.getElementById('statusFilter');
-    const rows = document.querySelectorAll('.student-row');
-    const noResults = document.getElementById('noResults');
-
-    function filterStudents() {
-
-        const searchValue = searchInput.value.toLowerCase().trim();
-        const statusValue = statusFilter.value;
-
-        let visibleRows = 0;
-
-        rows.forEach(row => {
-
-            const name = row.dataset.name;
-            const email = row.dataset.email;
-            const status = row.dataset.status;
-
-            const matchesSearch =
-                name.includes(searchValue) ||
-                email.includes(searchValue);
-
-            const matchesStatus =
-                statusValue === 'all' ||
-                status === statusValue;
-
-            if (matchesSearch && matchesStatus) {
-
-                row.classList.remove('hidden');
-
-                visibleRows++;
-
-            } else {
-
-                row.classList.add('hidden');
-
-            }
-
-        });
-
-
-        if (visibleRows === 0 && rows.length > 0) {
-
-            noResults.classList.remove('hidden');
-
-        } else {
-
-            noResults.classList.add('hidden');
-
-        }
-
+(() => {
+    const search = document.getElementById('studentSearch');
+    const status = document.getElementById('statusFilter');
+    const rows = [...document.querySelectorAll('.student-row')];
+    const previous = document.getElementById('studentPrevious');
+    const next = document.getElementById('studentNext');
+    let page = 1;
+    const pageSize = 10;
+    function render() {
+        const words = search.value.toLowerCase().trim().split(/\s+/).filter(Boolean);
+        const matching = rows.filter(row => words.every(word => (row.dataset.name + ' ' + row.dataset.email).includes(word)) && (status.value === 'all' || status.value === row.dataset.status));
+        const pages = Math.max(1, Math.ceil(matching.length / pageSize));
+        page = Math.min(page, pages);
+        rows.forEach(row => row.classList.add('hidden'));
+        matching.slice((page - 1) * pageSize, page * pageSize).forEach(row => row.classList.remove('hidden'));
+        document.getElementById('noResults')?.classList.toggle('hidden', matching.length !== 0);
+        document.getElementById('studentPageSummary').textContent = matching.length ? `Showing ${(page - 1) * pageSize + 1}-${Math.min(page * pageSize, matching.length)} of ${matching.length} students` : '0 matching students';
+        document.getElementById('studentPageNumber').textContent = `Page ${page} of ${pages}`;
+        previous.disabled = page === 1; next.disabled = page === pages;
+        previous.parentElement.hidden = matching.length <= pageSize;
     }
-
-
-    searchInput.addEventListener('input', filterStudents);
-
-    statusFilter.addEventListener('change', filterStudents);
-
+    search.addEventListener('input', () => { page = 1; render(); });
+    status.addEventListener('change', () => { page = 1; render(); });
+    previous.addEventListener('click', () => { page--; render(); });
+    next.addEventListener('click', () => { page++; render(); });
+    render();
+})();
 </script>
 
 </body>

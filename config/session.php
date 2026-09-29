@@ -169,6 +169,9 @@ return [
     |
     */
 
+    // Null lets Symfony mark cookies Secure when the request uses HTTPS.
+    // Keep null (or false) for local HTTP; use true on HTTPS-only deployments.
+    // TLS-terminating proxies must be configured as trusted proxies separately.
     'secure' => env('SESSION_SECURE_COOKIE'),
 
     /*
@@ -182,7 +185,9 @@ return [
     |
     */
 
-    'http_only' => env('SESSION_HTTP_ONLY', true),
+    // Session IDs must never be readable by JavaScript. This does not change
+    // Laravel's deliberately readable XSRF-TOKEN cookie used for CSRF requests.
+    'http_only' => true,
 
     /*
     |--------------------------------------------------------------------------
@@ -199,6 +204,8 @@ return [
     |
     */
 
+    // Lax permits the top-level GET callback from Google OAuth. Strict can
+    // prevent the browser from sending the existing session on that callback.
     'same_site' => env('SESSION_SAME_SITE', 'lax'),
 
     /*

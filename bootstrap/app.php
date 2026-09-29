@@ -13,6 +13,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
     ->withMiddleware(function (Middleware $middleware) {
 
+        $middleware->prepend(\App\Http\Middleware\SecurityHeaders::class);
+
         // =====================================================
         // CUSTOM ROLE MIDDLEWARE
         // =====================================================

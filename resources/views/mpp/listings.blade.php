@@ -46,10 +46,11 @@
 <!-- Font Awesome -->
 <link
     rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous"
 >
 
 
+    <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
 </head>
 
 <body class="bg-slate-50/80 font-sans antialiased text-slate-800">
@@ -63,63 +64,23 @@
 
 <!-- ================= MAIN ================= -->
 
-<main class="ml-0 min-w-0 md:ml-64">
+<main class="mpp-listings-page ml-0 min-w-0 md:ml-[280px]">
 
 
     <!-- ================= HEADER ================= -->
 
-    <header
-        class="sticky top-0 z-40 flex items-center
-               justify-between border-b border-slate-200/60
-               bg-white/90 px-8 py-4 backdrop-blur-md"
-    >
 
-        <div>
+@if($errors->any())<div role="alert" class="mx-8 mt-4 rounded-lg bg-rose-50 p-3 text-rose-700">{{ $errors->first() }} Please reopen the moderation form.</div>@endif
 
-            <h2 class="text-base font-bold tracking-tight text-slate-900">
-                Listings
-            </h2>
+@if(request()->filled('user_id'))<div class="mx-8 mt-5 rounded-xl border border-indigo-100 bg-indigo-50 p-3 text-sm text-indigo-700">Showing records for the selected student. <a class="ml-2 font-semibold underline" href="{{ route('mpp.listings') }}">Show all</a></div>@endif
 
-        </div>
-
-
-        <!-- PROFILE -->
-
-        <div class="flex items-center space-x-3">
-
-            <div class="text-right">
-
-                <div class="mb-0.5 text-xs font-bold leading-none text-slate-900">
-                    {{ Auth::user()->name }}
-                </div>
-
-                <div class="text-[11px] font-medium leading-none text-slate-400">
-                    {{ Auth::user()->email }}
-                </div>
-
-            </div>
-
-
-            <div
-                class="flex h-9 w-9 items-center justify-center
-                       rounded-full border border-brand-100
-                       bg-brand-50 text-xs font-bold uppercase
-                       text-brand-600 ring-2 ring-brand-500/10"
-            >
-
-                {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
-
-            </div>
-
-        </div>
-
-    </header>
 
 
 
     <!-- ================= CONTENT ================= -->
 
-    <div class="space-y-5 p-8">
+    <div class="mpp-page-content space-y-4 p-4 md:p-6">
+        @include('mpp.page-heading', ['title' => 'Room Listings', 'description' => 'Review rental listings, availability, and moderation status.'])
 
 
         <!-- SUCCESS -->
@@ -223,6 +184,7 @@
 
                 <!-- REPORTS -->
 
+                <select id="availabilityFilter" aria-label="Filter availability" class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs"><option value="all">All Availability</option><option value="available">Available</option><option value="rented">Rented</option><option value="unavailable">Unavailable</option></select>
                 <select
                     id="reportFilter"
                     class="rounded-xl
@@ -250,6 +212,7 @@
                     </option>
 
                 </select>
+                <button id="listingClear" type="button" class="shrink-0 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">Clear</button>
 
             </div>
 
@@ -299,14 +262,7 @@
                                     Owner
                                 </th>
 
-                                <th
-                                    class="px-6 py-4
-                                           text-[10px] font-bold
-                                           uppercase tracking-wider
-                                           text-slate-500"
-                                >
-                                    Location
-                                </th>
+
 
                                 <th
                                     class="px-6 py-4
@@ -317,14 +273,9 @@
                                     Rent
                                 </th>
 
-                                <th
-                                    class="px-6 py-4
-                                           text-[10px] font-bold
-                                           uppercase tracking-wider
-                                           text-slate-500"
-                                >
-                                    Room
-                                </th>
+
+
+                                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">Availability</th>
 
                                 <th
                                     class="px-6 py-4
@@ -367,14 +318,14 @@
                                 <tr
                                     class="listing-row transition hover:bg-slate-50"
                                     data-search="{{ strtolower(
-                                        $listing->title . ' ' .
-                                        ($listing->user->name ?? '') . ' ' .
-                                        ($listing->user->email ?? '') . ' ' .
-                                        $listing->location . ' ' .
+                                        $listing->listing_title . ' ' .
+                                        ($listing->user->user_name ?? '') . ' ' .
+                                        ($listing->user->user_email ?? '') . ' ' .
+                                        $listing->listing_location . ' ' .
                                         $listing->room_type
                                     ) }}"
-                                    data-status="{{ $listing->status }}"
-                                    data-reports="{{ $listing->report_count > 0 ? 'reported' : 'none' }}"
+                                    data-status="{{ $listing->listing_status }}"
+                                    data-availability="{{ $listing->listing_availability ?? 'unavailable' }}" data-reports="{{ $listing->report_count > 0 ? 'reported' : 'none' }}"
                                 >
 
 
@@ -383,22 +334,23 @@
                                     <td class="px-6 py-4">
 
                                         <p
-                                            class="max-w-[200px]
+                                            title="{{ $listing->listing_title }}"
+                                            class="listing-cell-title w-full min-w-0
                                                    truncate text-xs
                                                    font-bold text-slate-800"
                                         >
 
-                                            {{ $listing->title }}
+                                            {{ $listing->listing_title }}
 
                                         </p>
 
                                         <p
-                                            class="mt-1 max-w-[200px]
+                                            class="listing-cell-description mt-1 w-full min-w-0
                                                    truncate text-[10px]
                                                    text-slate-400"
                                         >
 
-                                            {{ $listing->description }}
+                                            {{ $listing->listing_description }}
 
                                         </p>
 
@@ -413,23 +365,25 @@
                                         @if($listing->user)
 
                                             <p
-                                                class="max-w-[190px]
+                                                title="{{ $listing->user->user_name }}"
+                                                class="listing-cell-owner w-full min-w-0
                                                        truncate text-xs
                                                        font-semibold
                                                        text-slate-700"
                                             >
 
-                                                {{ $listing->user->name }}
+                                                {{ $listing->user->user_name }}
 
                                             </p>
 
                                             <p
-                                                class="mt-1 max-w-[190px]
+                                                title="{{ $listing->user->user_email }}"
+                                                class="listing-cell-email mt-1 w-full min-w-0
                                                        truncate text-[10px]
                                                        text-slate-400"
                                             >
 
-                                                {{ $listing->user->email }}
+                                                {{ $listing->user->user_email }}
 
                                             </p>
 
@@ -448,21 +402,7 @@
 
 
 
-                                    <!-- LOCATION -->
 
-                                    <td class="px-6 py-4">
-
-                                        <p
-                                            class="max-w-[180px]
-                                                   text-xs
-                                                   text-slate-600"
-                                        >
-
-                                            {{ $listing->location }}
-
-                                        </p>
-
-                                    </td>
 
 
 
@@ -475,7 +415,7 @@
                                                    text-brand-600"
                                         >
 
-                                            RM {{ number_format($listing->rent, 2) }}
+                                            RM {{ number_format($listing->listing_rent, 2) }}
 
                                         </span>
 
@@ -483,68 +423,26 @@
 
 
 
-                                    <!-- ROOM -->
+
+
+
 
                                     <td class="px-6 py-4">
-
-                                        <span
-                                            class="rounded-full
-                                                   bg-slate-100
-                                                   px-2.5 py-1
-                                                   text-[10px]
-                                                   font-bold
-                                                   text-slate-600"
-                                        >
-
-                                            {{ $listing->room_type }}
-
-                                        </span>
-
+                                        <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $listing->listing_availability === 'available' ? 'bg-emerald-100 text-emerald-700' : ($listing->listing_availability === 'rented' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600') }}">{{ ucfirst($listing->listing_availability ?? 'unavailable') }}</span>
                                     </td>
-
-
-
-                                    <!-- REPORTS -->
-
                                     <td class="px-6 py-4 text-center">
-
                                         @if($listing->report_count > 0)
-
-                                            <span
-                                                class="inline-flex min-w-[28px]
-                                                       items-center justify-center
-                                                       rounded-full
-                                                       bg-rose-100
-                                                       px-2 py-1
-                                                       text-[10px]
-                                                       font-bold
-                                                       text-rose-600"
-                                            >
-
-                                                {{ $listing->report_count }}
-
-                                            </span>
-
+                                            <a href="{{ route('mpp.reports', ['listing_id' => $listing->getKey()]) }}" class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold {{ $listing->report_count >= 3 ? 'bg-rose-100 text-rose-700' : ($listing->report_count === 2 ? 'bg-orange-100 text-orange-700' : 'bg-amber-100 text-amber-700') }}" aria-label="View reports for {{ $listing->listing_title }}">{{ $listing->report_count }} {{ $listing->report_count == 1 ? 'Report' : 'Reports' }}</a>
                                         @else
-
-                                            <span
-                                                class="text-xs
-                                                       text-slate-400"
-                                            >
-                                                0
-                                            </span>
-
+                                            <span class="text-xs text-slate-400">0 Reports</span>
                                         @endif
-
                                     </td>
-
-
 
                                     <!-- STATUS -->
 
                                     <td class="px-6 py-4">
 
-                                        @if($listing->status === 'active')
+                                        @if($listing->listing_status === 'active')
 
                                             <span
                                                 class="inline-flex items-center gap-1.5
@@ -566,7 +464,7 @@
 
                                             </span>
 
-                                        @elseif($listing->status === 'hidden')
+                                        @elseif($listing->listing_status === 'hidden')
 
                                             <span
                                                 class="inline-flex items-center gap-1.5
@@ -599,7 +497,7 @@
                                                        text-slate-600"
                                             >
 
-                                                {{ ucfirst($listing->status) }}
+                                                {{ ucfirst($listing->listing_status) }}
 
                                             </span>
 
@@ -609,82 +507,11 @@
 
 
 
-                                    <!-- ACTION -->
-
-                                    <td class="px-6 py-4 text-right">
-
-                                        @if($listing->status === 'active')
-
-                                            <form
-                                                action="{{ route('mpp.listings.remove', $listing->id) }}"
-                                                method="POST"
-                                                class="inline"
-                                            >
-
-                                                @csrf
-
-                                                <button
-                                                    type="submit"
-                                                    class="rounded-lg
-                                                           bg-rose-50
-                                                           px-3 py-2
-                                                           text-[10px]
-                                                           font-bold
-                                                           text-rose-600
-                                                           transition
-                                                           hover:bg-rose-100"
-                                                    onclick="return confirm('Remove this listing?')"
-                                                >
-
-                                                    <i
-                                                        class="fa-solid
-                                                               fa-eye-slash
-                                                               mr-1"
-                                                    ></i>
-
-                                                    Remove
-
-                                                </button>
-
-                                            </form>
-
-                                        @elseif($listing->status === 'hidden')
-
-                                            <form
-                                                action="{{ route('mpp.listings.restore', $listing->id) }}"
-                                                method="POST"
-                                                class="inline"
-                                            >
-
-                                                @csrf
-
-                                                <button
-                                                    type="submit"
-                                                    class="rounded-lg
-                                                           bg-amber-50
-                                                           px-3 py-2
-                                                           text-[10px]
-                                                           font-bold
-                                                           text-amber-700
-                                                           transition
-                                                           hover:bg-amber-100"
-                                                    onclick="return confirm('Restore this listing?')"
-                                                >
-
-                                                    <i
-                                                        class="fa-solid
-                                                               fa-rotate-left
-                                                               mr-1"
-                                                    ></i>
-
-                                                    Restore
-
-                                                </button>
-
-                                            </form>
-
-                                        @endif
-
+                                    <!-- Review details before taking moderation action. -->
+                                    <td class="px-6 py-4 text-center">
+                                        <div class="listing-row-actions">
+                                            <button type="button" onclick="document.getElementById('listing-details-{{ $listing->getKey() }}').showModal()" class="rounded-lg bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100" aria-label="View details for {{ $listing->listing_title }}"><i class="fa-solid fa-eye mr-1" aria-hidden="true"></i>View</button>
+                                        </div>
                                     </td>
 
                                 </tr>
@@ -761,6 +588,7 @@
 
     </div>
 
+<div class="flex items-center justify-end gap-3 p-4"><span id="listingPageSummary" class="text-sm text-slate-500"></span><button id="listingPrevious" type="button" class="rounded-lg border px-3 py-2 disabled:opacity-40">Previous</button><button id="listingNext" type="button" class="rounded-lg border px-3 py-2 disabled:opacity-40">Next</button></div>
 </main>
 ```
 
@@ -768,105 +596,27 @@
 
 <!-- ================= FILTER SCRIPT ================= -->
 
+
 <script>
-
-    const listingSearch = document.getElementById('listingSearch');
-    const statusFilter = document.getElementById('statusFilter');
-    const reportFilter = document.getElementById('reportFilter');
-
-    const listingRows = document.querySelectorAll('.listing-row');
-    const noResults = document.getElementById('noResults');
-
-
-    function filterListings() {
-
-        const search =
-            listingSearch.value.toLowerCase().trim();
-
-        const status =
-            statusFilter.value;
-
-        const reports =
-            reportFilter.value;
-
-        let visible = 0;
-
-
-        listingRows.forEach(row => {
-
-            const rowSearch =
-                row.dataset.search;
-
-            const rowStatus =
-                row.dataset.status;
-
-            const rowReports =
-                row.dataset.reports;
-
-
-            const matchesSearch =
-                rowSearch.includes(search);
-
-            const matchesStatus =
-                status === 'all' ||
-                rowStatus === status;
-
-            const matchesReports =
-                reports === 'all' ||
-                rowReports === reports;
-
-
-            if (
-                matchesSearch &&
-                matchesStatus &&
-                matchesReports
-            ) {
-
-                row.classList.remove('hidden');
-
-                visible++;
-
-            } else {
-
-                row.classList.add('hidden');
-
-            }
-
-        });
-
-
-        if (visible === 0 && listingRows.length > 0) {
-
-            noResults.classList.remove('hidden');
-
-        } else {
-
-            noResults.classList.add('hidden');
-
-        }
-
-    }
-
-
-    listingSearch.addEventListener(
-        'input',
-        filterListings
-    );
-
-
-    statusFilter.addEventListener(
-        'change',
-        filterListings
-    );
-
-
-    reportFilter.addEventListener(
-        'change',
-        filterListings
-    );
-
+(() => {
+ const search = document.getElementById('listingSearch'), status = document.getElementById('statusFilter'), reports = document.getElementById('reportFilter'), availability = document.getElementById('availabilityFilter');
+ const rows = [...document.querySelectorAll('.listing-row')]; let page = 1; const pageSize = 6;
+ const previous = document.getElementById('listingPrevious'), next = document.getElementById('listingNext');
+ function render() {
+  const matching = rows.filter(row => row.dataset.search.includes(search.value.toLowerCase().trim()) && (status.value === 'all' || status.value === row.dataset.status) && (reports.value === 'all' || reports.value === row.dataset.reports) && (availability.value === 'all' || availability.value === row.dataset.availability));
+  const pages = Math.max(1, Math.ceil(matching.length / pageSize)); page = Math.min(page, pages);
+  rows.forEach(row => row.classList.add('hidden')); matching.slice((page - 1)*pageSize, page*pageSize).forEach(row => row.classList.remove('hidden'));
+  document.getElementById('noResults')?.classList.toggle('hidden', matching.length !== 0);
+  document.getElementById('listingPageSummary').textContent = matching.length ? `Showing ${(page-1)*pageSize+1}-${Math.min(page*pageSize,matching.length)} of ${matching.length} listings | Page ${page} of ${pages}` : 'No matching listings';
+  previous.disabled = page === 1; next.disabled = page === pages; previous.hidden = next.hidden = pages === 1;
+ }
+ document.getElementById('listingClear').addEventListener('click', () => {search.value = '';status.value = reports.value = availability.value = 'all';page = 1;render();search.focus();});
+ [search,status,reports,availability].forEach(el => el.addEventListener('input', () => {page = 1; render();}));
+ previous.addEventListener('click', () => {page--;render();}); next.addEventListener('click', () => {page++;render();}); render();
+})();
 </script>
 
+@include('mpp.listing-details-modals')
 </body>
 
 </html>

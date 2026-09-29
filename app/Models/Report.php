@@ -9,19 +9,23 @@ class Report extends Model
 {
     use HasFactory;
 
+    protected $primaryKey = 'report_id';
+    public const CREATED_AT = 'report_created_at';
+    public const UPDATED_AT = 'report_updated_at';
+
     protected $fillable = [
         'listing_id',
         'user_id',
-        'reason',
+        'report_reason',
     ];
 
     public function listing()
     {
-        return $this->belongsTo(Listing::class);
+        return $this->belongsTo(Listing::class, 'listing_id', 'listing_id');
     }
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id', 'user_id');
     }
 }

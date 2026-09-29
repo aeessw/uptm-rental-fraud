@@ -22,10 +22,14 @@ class StudentMiddleware
         }
 
         // User is logged in but is not a student
-        if (auth()->user()->role !== 'student') {
+        if (auth()->user()->user_role !== 'student') {
             abort(403, 'Unauthorized access.');
         }
 
-        return $next($request);
+        return $next($request)->withHeaders([
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ]);
     }
 }

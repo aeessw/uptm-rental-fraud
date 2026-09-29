@@ -35,7 +35,8 @@
     </script>
 
     <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
 </head>
 <body class="bg-slate-50/80 font-sans text-slate-800 antialiased">
 
@@ -47,34 +48,9 @@
     <!-- Main Content Area -->
     <main class="flex min-w-0 flex-1 flex-col">
 
-        <!-- Top Header -->
-        <header class="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200/60 bg-white/80 px-8 py-4 backdrop-blur-md">
-            <div class="flex items-center space-x-3">
-                <h2 class="text-base font-bold tracking-tight text-slate-900">Room Listings</h2>
-            </div>
-
-            <!-- User Profile Header -->
-            <div class="flex items-center space-x-3">
-                <div class="text-right">
-                    <div class="mb-1 text-xs font-bold leading-none text-slate-900">{{ Auth::user()->name }}</div>
-                    <div class="text-[11px] font-medium leading-none text-slate-400">{{ Auth::user()->email }}</div>
-                </div>
-                <div class="flex h-9 w-9 items-center justify-center rounded-full border border-brand-100 bg-brand-50 text-xs font-bold uppercase text-brand-600 ring-2 ring-brand-500/10">
-                    {{ substr(Auth::user()->name, 0, 2) }}
-                </div>
-            </div>
-        </header>
 
         <!-- Page Body Content -->
         <div class="space-y-6 overflow-y-auto p-8">
-
-            <!-- Success Alert -->
-            @if(session('success'))
-                <div class="flex items-center space-x-2.5 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-xs font-semibold text-emerald-800">
-                    <i class="fa-solid fa-circle-check text-emerald-600"></i>
-                    <span>{{ session('success') }}</span>
-                </div>
-            @endif
 
             <!-- Error Alert -->
             @if(session('error'))
@@ -99,7 +75,7 @@
                            class="w-full rounded-xl border-none bg-slate-50/80 py-2 pl-9 pr-4 text-xs font-medium text-slate-800 placeholder-slate-400 transition focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20">
                 </div>
 
-                <!-- Location Select -->
+                <!-- Location Select
                 <select name="location"
                         class="rounded-xl border border-slate-200/80 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20">
                     <option value="">All Locations</option>
@@ -107,7 +83,7 @@
                     <option value="Maluri" {{ request('location') == 'Maluri' ? 'selected' : '' }}>Maluri</option>
                     <option value="Pandan Indah" {{ request('location') == 'Pandan Indah' ? 'selected' : '' }}>Pandan Indah</option>
                     <option value="Petaling Jaya" {{ request('location') == 'Petaling Jaya' ? 'selected' : '' }}>Petaling Jaya</option>
-                </select>
+                </select>-->
 
                 <!-- Rent Select -->
                 <select name="rent"
@@ -127,6 +103,24 @@
                     <option value="Shared" {{ request('room_type') == 'Shared' ? 'selected' : '' }}>Shared</option>
                 </select>
 
+                <!-- Sort Select -->
+                <select name="sort"
+                        class="rounded-xl border border-slate-200/80 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20">
+                    <option value="newest" {{ request('sort', 'newest') == 'newest' ? 'selected' : '' }}>Newest</option>
+                    <option value="price_asc" {{ request('sort') == 'price_asc' ? 'selected' : '' }}>Price: Low to High</option>
+                    <option value="price_desc" {{ request('sort') == 'price_desc' ? 'selected' : '' }}>Price: High to Low</option>
+                </select>
+
+                <label for="pax" class="text-xs font-semibold text-slate-600">Pax</label>
+                <select id="pax" name="pax"
+                        class="rounded-xl border border-slate-200/80 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20">
+                    <option value="">All</option>
+                    @foreach(range(1, 4) as $pax)
+                        <option value="{{ $pax }}" @selected(request('pax') == $pax)>{{ $pax }} pax</option>
+                    @endforeach
+                    <option value="5+" @selected(request('pax') === '5+')>5+ pax</option>
+                </select>
+
                 <!-- Apply Filters Button -->
                 <button type="submit"
                         class="rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-brand-700 active:scale-95">
@@ -135,7 +129,7 @@
                 </button>
 
                 <!-- Clear Filters Button -->
-                @if(request()->hasAny(['search', 'location', 'rent', 'room_type']))
+                @if(request()->hasAny(['search', 'location', 'rent', 'room_type', 'sort', 'pax']))
                     <a href="{{ route('student.listings') }}"
                        class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50">
                         <i class="fa-solid fa-xmark mr-1.5"></i>
@@ -145,7 +139,7 @@
             </form>
 
             <!-- Active Filters Notification Bar -->
-            @if(request()->hasAny(['search', 'location', 'rent', 'room_type']))
+            @if(request()->hasAny(['search', 'location', 'rent', 'room_type', 'sort', 'pax']))
                 <div class="flex items-center justify-between rounded-2xl border border-brand-100 bg-brand-50/50 px-4 py-3">
                     <div class="flex items-center space-x-2 text-xs font-semibold text-brand-900">
                         <i class="fa-solid fa-filter text-brand-600"></i>
@@ -161,25 +155,28 @@
             @if($listings->count() > 0)
                 <div class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
                     @foreach($listings as $listing)
-                        <a href="{{ route('student.listings.show', $listing->id) }}"
-                           class="group flex cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md">
-                            <div>
+                        @php $isSaved = Auth::user()->savedListings()->whereKey($listing->getKey())->exists(); @endphp
+                        <article class="group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md">
+                            <a href="{{ route('student.listings.show', $listing->getKey()) }}" class="block">
                                 <!-- Image Container -->
                                 <div class="relative aspect-video overflow-hidden bg-slate-100">
-                                    @if($listing->photo)
-                                        <img src="{{ asset('storage/' . $listing->photo) }}"
-                                             alt="{{ $listing->title }}"
-                                             class="h-full w-full object-cover transition duration-300 group-hover:scale-105">
+                                    @if($listing->listing_photo)
+                                        <img src="{{ asset('storage/' . $listing->listing_photo) }}"
+                                             alt="{{ $listing->listing_title }}"
+                                             class="h-full w-full object-cover transition duration-300 group-hover:scale-105 {{ $listing->listing_availability === 'rented' ? 'opacity-75 saturate-50' : '' }}">
                                     @else
                                         <div class="flex h-full w-full items-center justify-center text-slate-300">
                                             <i class="fa-solid fa-image text-3xl"></i>
                                         </div>
                                     @endif
 
-                                    <!-- Status Badge -->
-                                    <span class="absolute right-3 top-3 rounded-full border border-white/20 bg-slate-900/80 px-2.5 py-0.5 text-[10px] font-bold text-white backdrop-blur-xs">
-                                        Active
+                                    @if((string) $listing->user_id === (string) Auth::id() || $listing->listing_availability !== 'available')
+                                    <span class="absolute left-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold shadow-sm {{ $listing->listing_availability === 'available' ? 'bg-emerald-100 text-emerald-700' : ($listing->listing_availability === 'rented' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600') }}">
+                                        <span class="h-1.5 w-1.5 rounded-full {{ $listing->listing_availability === 'available' ? 'bg-emerald-500' : ($listing->listing_availability === 'rented' ? 'bg-rose-500' : 'bg-slate-500') }}"></span>
+                                        {{ ucfirst($listing->listing_availability ?? 'available') }}
                                     </span>
+                                    @endif
+
 
                                     <!-- Hover Overlay Indicator -->
                                     <div class="absolute inset-0 flex items-center justify-center bg-slate-900/0 transition duration-300 group-hover:bg-slate-900/20">
@@ -188,22 +185,23 @@
                                             <span>View Listing</span>
                                         </div>
                                     </div>
+
                                 </div>
 
                                 <!-- Card Details -->
                                 <div class="p-4">
                                     <h5 class="line-clamp-1 text-sm font-bold text-slate-900 transition group-hover:text-brand-600">
-                                        {{ $listing->title }}
+                                        {{ $listing->listing_title }}
                                     </h5>
 
                                     <div class="mt-1.5 flex items-center space-x-1.5 text-[11px] text-slate-500">
                                         <i class="fa-solid fa-location-dot text-slate-400"></i>
-                                        <span class="line-clamp-1 font-medium">{{ $listing->location }}</span>
+                                        <span class="line-clamp-1 font-medium">{{ $listing->listing_location }}</span>
                                     </div>
 
-                                    <div class="mt-3 flex items-baseline space-x-1">
+                                    <div class="mt-3 flex flex-wrap items-baseline gap-x-1 gap-y-1">
                                         <span class="text-base font-extrabold text-brand-600">
-                                            RM {{ number_format($listing->rent, 2) }}
+                                            RM {{ number_format($listing->listing_rent, 2) }}
                                         </span>
                                         <span class="text-xs font-medium text-slate-400">/mo</span>
 
@@ -213,15 +211,28 @@
                                                 {{ $listing->room_type }}
                                             </span>
                                         @endif
+                                        <span class="mx-1 text-xs text-slate-300">&bull;</span>
+                                        <span class="text-xs font-semibold text-slate-500">
+                                            @include('student.listings.pax-label')
+                                        </span>
                                     </div>
                                 </div>
-                            </div>
+                            </a>
+
+                            @if($listing->listing_availability === 'available')
+                            <form action="{{ route('student.listings.save', $listing->getKey()) }}" method="POST" class="save-listing-form absolute right-3 top-3 z-20" data-title="{{ $listing->listing_title }}" data-saved="{{ $isSaved ? 'true' : 'false' }}">
+                                @csrf
+                                <button type="submit" class="save-listing-button flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-brand-600 shadow-sm transition hover:bg-brand-50" aria-label="{{ $isSaved ? 'Remove ' : 'Save ' }}{{ $listing->listing_title }} {{ $isSaved ? 'from saved listings' : 'to saved listings' }}" title="{{ $isSaved ? 'Remove from saved listings' : 'Save listing' }}">
+                                    <i class="save-listing-icon {{ $isSaved ? 'fa-solid' : 'fa-regular' }} fa-bookmark"></i>
+                                </button>
+                            </form>
+                            @endif
 
                             <!-- Card Footer -->
                             <div class="border-t border-slate-100 bg-slate-50/60 px-4 py-2.5">
                                 <div class="flex items-center justify-between text-[11px]">
                                     <span class="font-medium text-slate-400">
-                                        {{ $listing->created_at ? $listing->created_at->diffForHumans() : 'Posted recently' }}
+                                        {{ $listing->listing_created_at ? $listing->listing_created_at->diffForHumans() : 'Posted recently' }}
                                     </span>
 
                                     <span class="font-bold text-brand-600 opacity-0 transition group-hover:opacity-100">
@@ -230,7 +241,7 @@
                                     </span>
                                 </div>
                             </div>
-                        </a>
+                        </article>
                     @endforeach
                 </div>
 
@@ -263,6 +274,43 @@
     </main>
 
 </div>
+
+<script>
+    document.querySelectorAll('.save-listing-form').forEach((form) => {
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const button = form.querySelector('.save-listing-button');
+            const icon = form.querySelector('.save-listing-icon');
+            button.disabled = true;
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+
+                if (!response.ok) throw new Error('Unable to update saved listing.');
+
+                const result = await response.json();
+                const title = form.dataset.title;
+                form.dataset.saved = String(result.saved);
+                icon.classList.toggle('fa-solid', result.saved);
+                icon.classList.toggle('fa-regular', !result.saved);
+                button.setAttribute('aria-label', `${result.saved ? 'Remove ' : 'Save '}${title} ${result.saved ? 'from saved listings' : 'to saved listings'}`);
+                button.title = result.saved ? 'Remove from saved listings' : 'Save listing';
+            } catch (error) {
+                form.submit();
+            } finally {
+                button.disabled = false;
+            }
+        });
+    });
+</script>
 
 </body>
 </html>

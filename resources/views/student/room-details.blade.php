@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $listing->title }} - UPTM Rental</title>
+    <title>{{ $listing->listing_title }} - UPTM Rental</title>
 
     <!-- Google Fonts: Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -35,10 +35,11 @@
     </script>
 
     <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
 </head>
 
-<body class="bg-slate-50/80 font-sans antialiased text-slate-800">
+<body class="bg-[#f4f7fb] font-sans antialiased text-slate-800">
 
 @php
     /*
@@ -48,8 +49,8 @@
      */
     $listingPhotos = [];
 
-    if ($listing->photo) {
-        $listingPhotos[] = asset('storage/' . $listing->photo);
+    if ($listing->listing_photo) {
+        $listingPhotos[] = asset('storage/' . $listing->listing_photo);
     }
 
     if ($listing->photos && $listing->photos->count() > 0) {
@@ -75,211 +76,170 @@
     <!-- ================= MAIN CONTENT ================= -->
     <main class="flex min-w-0 flex-1 flex-col">
 
-        <!-- Top Header -->
-        <header class="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200/60 bg-white/80 px-8 py-4 backdrop-blur-md">
-            <div class="flex items-center space-x-3">
-                <h2 class="text-base font-bold tracking-tight text-slate-900">
-                    Room Details: {{ $listing->title }}
-                </h2>
-            </div>
-
-            <!-- User Profile Header -->
-            <div class="flex items-center space-x-3">
-                <div class="text-right">
-                    <div class="mb-1 text-xs font-bold leading-none text-slate-900">
-                        {{ Auth::user()->name }}
-                    </div>
-                    <div class="text-[11px] font-medium leading-none text-slate-400">
-                        {{ Auth::user()->email }}
-                    </div>
-                </div>
-
-                <div class="flex h-9 w-9 items-center justify-center rounded-full border border-brand-100 bg-brand-50 text-xs font-bold uppercase text-brand-600 ring-2 ring-brand-500/10">
-                    {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
-                </div>
-            </div>
-        </header>
 
         <!-- ================= PAGE CONTENT ================= -->
-        <div class="space-y-6 overflow-y-auto p-8">
-
-            <!-- Success Message -->
-            @if(session('success'))
-                <div class="flex items-center space-x-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 text-xs font-semibold text-emerald-800">
-                    <i class="fa-solid fa-circle-check text-emerald-600"></i>
-                    <span>{{ session('success') }}</span>
-                </div>
-            @endif
-
-            <!-- Error Message -->
-            @if(session('error'))
-                <div class="flex items-center space-x-2.5 rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 text-xs font-semibold text-rose-800">
-                    <i class="fa-solid fa-circle-exclamation text-rose-600"></i>
-                    <span>{{ session('error') }}</span>
-                </div>
-            @endif
-
-            <!-- ================= LISTING CARD ================= -->
-            <div class="mx-auto max-w-5xl rounded-2xl border border-slate-200/60 bg-white p-6 shadow-xs md:p-8">
-
-                <!-- PHOTO AREA -->
-                <div class="relative h-[380px] w-full overflow-hidden rounded-xl bg-slate-100">
-                    @if(count($listingPhotos) > 0)
-                        <!-- Clickable Main Photo -->
-                        <button type="button"
-                                onclick="openPhotoViewer(0)"
-                                class="group block h-full w-full cursor-pointer">
-                            <img src="{{ $listingPhotos[0] }}"
-                                 alt="{{ $listing->title }}"
-                                 class="h-full w-full object-cover transition duration-300 group-hover:scale-105">
-
-                            <!-- Hover Overlay -->
-                            <div class="absolute inset-0 flex items-center justify-center bg-slate-900/0 transition group-hover:bg-slate-900/30">
-                                <div class="rounded-full bg-white/90 px-4 py-2 text-xs font-bold text-slate-700 opacity-0 shadow-md transition group-hover:opacity-100">
-                                    <i class="fa-solid fa-expand mr-1.5"></i>
-                                    View Photos
-                                </div>
-                            </div>
-                        </button>
-                    @else
-                        <div class="flex h-full w-full items-center justify-center text-slate-300">
-                            <i class="fa-solid fa-image text-5xl"></i>
-                        </div>
-                    @endif
-
-                    <!-- Photo Count Badge -->
-                    @if(count($listingPhotos) > 1)
-                        <span class="absolute bottom-4 left-4 rounded-full bg-slate-900/80 px-3 py-1.5 text-[10px] font-bold text-white backdrop-blur-xs">
-                            <i class="fa-solid fa-images mr-1"></i>
-                            {{ count($listingPhotos) }} photos
-                        </span>
-                    @endif
+        <div class="overflow-y-auto px-4 py-5 sm:px-6 lg:px-10 lg:py-8">
+            <div class="mx-auto w-full max-w-6xl">
+                <div class="mb-5 flex items-center justify-between">
+                    <a href="{{ route('student.listings') }}" class="inline-flex items-center gap-2 text-sm font-semibold text-slate-500 transition hover:text-brand-600">
+                        <i class="fa-solid fa-arrow-left text-xs"></i>
+                        <span>Back to listings</span>
+                    </a>
+                    <button type="button"
+                            onclick="copyListingLink()"
+                            class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-brand-200 hover:text-brand-600"
+                            aria-label="Copy listing link">
+                        <i class="fa-solid fa-share-nodes text-xs"></i>
+                        <span id="copy-link-label">Share</span>
+                    </button>
                 </div>
 
-                <!-- LISTING DETAILS -->
-                <div class="mt-6 flex flex-col justify-between md:flex-row md:items-start">
-                    <div>
-                        <h1 class="text-xl font-extrabold tracking-tight text-slate-900">
-                            {{ $listing->title }}
-                        </h1>
-
-                        <div class="mt-1 flex items-center space-x-1.5 text-xs font-medium text-slate-500">
-                            <i class="fa-solid fa-location-dot text-slate-400"></i>
-                            <span>{{ $listing->location }}</span>
-                        </div>
-                    </div>
-
-                    <div class="mt-4 text-left md:mt-0 md:text-right">
-                        <div class="text-2xl font-extrabold tracking-tight text-brand-600">
-                            RM {{ number_format($listing->rent, 0) }}<span class="text-xs font-medium text-slate-400">/mo</span>
-                        </div>
-
-                        <span class="mt-1 inline-block rounded-md border border-brand-100 bg-brand-50 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-600">
-                            {{ $listing->room_type ?? 'N/A' }}
-                        </span>
-                    </div>
-                </div>
-
-                <hr class="my-6 border-slate-100">
-
-                <!-- Description -->
-                <div>
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900">
-                        Listing Description
-                    </h3>
-
-                    <p class="mt-2.5 whitespace-pre-line text-xs font-medium leading-relaxed text-slate-600">
-                        {{ $listing->description }}
-                    </p>
-                </div>
-
-                <!-- PHOTO THUMBNAILS -->
-                @if(count($listingPhotos) > 1)
-                    <div class="mt-6 border-t border-slate-100 pt-5">
-                        <div class="mb-3 flex items-center justify-between">
-                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900">Photos</h3>
-                            <span class="text-[10px] font-medium text-slate-400">Click a photo to view</span>
-                        </div>
-
-                        <div class="grid grid-cols-4 gap-3 sm:grid-cols-5 md:grid-cols-6">
-                            @foreach($listingPhotos as $index => $photo)
-                                <button type="button"
-                                        onclick="openPhotoViewer({{ $index }})"
-                                        class="group relative aspect-square overflow-hidden rounded-xl border border-slate-200/80 bg-slate-100">
-                                    <img src="{{ $photo }}"
-                                         alt="{{ $listing->title }} photo {{ $index + 1 }}"
-                                         class="h-full w-full object-cover transition duration-300 group-hover:scale-110">
-
-                                    <div class="absolute inset-0 flex items-center justify-center bg-slate-900/0 transition group-hover:bg-slate-900/30">
-                                        <i class="fa-solid fa-expand text-xs text-white opacity-0 transition group-hover:opacity-100"></i>
-                                    </div>
-                                </button>
-                            @endforeach
-                        </div>
+                @if(session('error'))
+                    <div class="mb-5 flex items-center gap-2.5 rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 text-sm font-semibold text-rose-800">
+                        <i class="fa-solid fa-circle-exclamation text-rose-600"></i>
+                        <span>{{ session('error') }}</span>
                     </div>
                 @endif
 
-                <!-- ================= BOTTOM SECTION: OWNER CARD & ACTIONS ================= -->
-                <div class="mt-8 border-t border-slate-100 pt-6">
-                    <div class="grid grid-cols-1 items-center gap-4 md:grid-cols-2">
-
-                        <!-- OWNER INFO CARD -->
-                        <div class="rounded-xl border border-slate-200/60 bg-slate-50/60 p-4">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center space-x-3.5">
-                                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white shadow-xs">
-                                        {{ strtoupper(substr($listing->user->name ?? 'User', 0, 2)) }}
-                                    </div>
-                                    <div>
-                                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                            Posted By
+                <div class="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
+                    <div class="min-w-0">
+                        <section id="photos" aria-label="Room photos">
+                            @if(count($listingPhotos) > 0)
+                                <div class="grid h-[280px] grid-cols-2 gap-2 overflow-hidden rounded-2xl sm:h-[390px] lg:h-[430px] {{ count($listingPhotos) > 1 ? 'lg:grid-cols-[minmax(0,1.65fr)_minmax(180px,0.8fr)]' : '' }}">
+                                    <button type="button" onclick="openPhotoViewer(0)" class="group relative min-h-0 overflow-hidden rounded-xl bg-slate-100 {{ count($listingPhotos) === 1 ? 'col-span-2' : '' }}">
+                                        <img src="{{ $listingPhotos[0] }}" alt="{{ $listing->listing_title }}" class="h-full w-full object-cover transition duration-500 group-hover:scale-105">
+                                        <span class="absolute bottom-3 left-3 rounded-full bg-slate-950/75 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur-sm">
+                                            <i class="fa-solid fa-images mr-1"></i>{{ count($listingPhotos) }} {{ count($listingPhotos) === 1 ? 'photo' : 'photos' }}
                                         </span>
-                                        <h4 class="text-sm font-bold text-slate-900">
-                                            {{ $listing->user->name ?? 'Unknown Student' }}
-                                        </h4>
-                                        @if(isset($listing->user->email))
-                                            <p class="text-[11px] font-medium text-slate-400">
-                                                {{ $listing->user->email }}
-                                            </p>
-                                        @endif
-                                    </div>
+                                    </button>
+
+                                    @if(count($listingPhotos) > 1)
+                                        <div class="grid min-h-0 grid-cols-2 gap-2 lg:grid-cols-1">
+                                            @foreach(array_slice($listingPhotos, 1, 2) as $index => $photo)
+                                                <button type="button" onclick="openPhotoViewer({{ $index + 1 }})" class="group relative min-h-0 overflow-hidden rounded-xl bg-slate-100">
+                                                    <img src="{{ $photo }}" alt="{{ $listing->listing_title }} photo {{ $index + 2 }}" class="h-full w-full object-cover transition duration-500 group-hover:scale-105">
+                                                    @if($index === 1 && count($listingPhotos) > 2)
+                                                        <span class="absolute bottom-3 right-3 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-md">View all photos</span>
+                                                    @endif
+                                                </button>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                 </div>
-
-                                @if(Auth::id() !== $listing->user_id)
-                                    <a href="{{ route('student.messages', $listing->user_id) }}"
-                                       class="inline-flex items-center space-x-2 rounded-xl bg-brand-600 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-brand-700">
-                                        <i class="fa-regular fa-comment"></i>
-                                        <span>Contact Poster</span>
-                                    </a>
-                                @else
-                                    <span class="rounded-lg bg-slate-200/60 px-3 py-1 text-[11px] font-bold text-slate-500">
-                                        Your Listing
-                                    </span>
-                                @endif
-                            </div>
-                        </div>
-
-                        <!-- ACTION BUTTONS (REPORT / EDIT) -->
-                        <div class="flex items-center justify-end">
-                            @if(Auth::id() === $listing->user_id)
-                                <a href="{{ route('student.listings.edit', $listing->id) }}"
-                                   class="flex w-full items-center justify-center space-x-2 rounded-xl border border-brand-200/80 bg-brand-50 px-6 py-3 text-xs font-bold text-brand-600 transition hover:bg-brand-100 md:w-auto">
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                    <span>Edit Listing</span>
-                                </a>
                             @else
-                                <button type="button"
-                                        onclick="document.getElementById('report-modal').classList.remove('hidden')"
-                                        class="flex w-full items-center justify-center space-x-2 rounded-xl border border-rose-200/80 bg-rose-50/50 px-5 py-3 text-xs font-bold text-rose-600 transition hover:bg-rose-100/60 md:w-auto">
-                                    <i class="fa-solid fa-triangle-exclamation"></i>
-                                    <span>Report Listing</span>
-                                </button>
+                                <div class="flex h-[280px] items-center justify-center rounded-2xl bg-slate-100 text-slate-300 sm:h-[390px]">
+                                    <i class="fa-regular fa-image text-5xl"></i>
+                                </div>
                             @endif
-                        </div>
+                        </section>
+
+                        <section class="mt-6" aria-labelledby="listing-title">
+                            <div class="flex flex-wrap items-start justify-between gap-4">
+                                <div>
+                                    <h1 id="listing-title" class="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">{{ $listing->listing_title }}</h1>
+                                    @if((string) $listing->user_id === (string) Auth::id() || $listing->listing_availability !== 'available')
+                                    <span class="mt-2 inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold {{ $listing->listing_availability === 'available' ? 'bg-emerald-100 text-emerald-700' : ($listing->listing_availability === 'rented' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600') }}">
+                                        <span class="mr-1.5 h-1.5 w-1.5 rounded-full {{ $listing->listing_availability === 'available' ? 'bg-emerald-500' : ($listing->listing_availability === 'rented' ? 'bg-rose-500' : 'bg-slate-500') }}"></span>
+                                        {{ ucfirst($listing->listing_availability ?? 'available') }}
+                                    </span>
+                                    @endif
+                                    <p class="mt-2 flex items-center gap-2 text-sm font-medium text-slate-500">
+                                        <i class="fa-solid fa-location-dot text-brand-500"></i>{{ $listing->listing_location }}
+                                    </p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <nav class="mt-7 flex gap-6 overflow-x-auto border-b border-slate-200" aria-label="Listing sections">
+                            <a href="#description" class="border-b-2 border-brand-600 pb-3 text-sm font-semibold text-slate-900">Room details</a>
+                        </nav>
+
+                        <section class="pt-7" aria-labelledby="rental-details-heading">
+                            <h2 id="rental-details-heading" class="text-base font-bold text-slate-900">Rental Details</h2>
+                            <dl class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3 text-sm">
+                                <div><dt class="text-slate-500">Available From</dt><dd class="mt-1 font-semibold text-slate-800">{{ $listing->available_from?->format('d M Y') ?? 'Not specified' }}</dd></div>
+                                <div><dt class="text-slate-500">Rental Period</dt><dd class="mt-1 font-semibold text-slate-800">{{ \App\Models\Listing::RENTAL_PERIODS[$listing->rental_period] ?? 'Not specified' }}</dd></div>
+                                <div><dt class="text-slate-500">Preferred Tenant</dt><dd class="mt-1 font-semibold text-slate-800">{{ \App\Models\Listing::TENANT_PREFERENCES[$listing->preferred_tenant] ?? 'Not specified' }}</dd></div>
+                            </dl>
+                        </section>
+                        <section class="pt-7" aria-labelledby="facilities-heading">
+                            <h2 id="facilities-heading" class="text-base font-bold text-slate-900">Facilities</h2>
+                            <ul class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm text-slate-600">
+                                @forelse($listing->facilities ?? [] as $facility)
+                                    <li><i class="fa-solid fa-check mr-2 text-emerald-600" aria-hidden="true"></i>{{ \App\Models\Listing::FACILITIES[$facility] ?? $facility }}</li>
+                                @empty
+                                    <li>Facilities not specified.</li>
+                                @endforelse
+                            </ul>
+                        </section>
+
+                        <section id="description" class="pt-7" aria-labelledby="description-heading">
+                            <h2 id="description-heading" class="text-base font-bold text-slate-900">Room Description</h2>
+                            <p class="mt-4 whitespace-pre-line text-sm font-medium leading-7 text-slate-600">{{ $listing->listing_description }}</p>
+                        </section>
 
                     </div>
-                </div>
 
+                    <aside>
+                        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:h-[430px]" aria-labelledby="details-heading">
+                            <h2 id="details-heading" class="border-b border-slate-100 pb-3 text-base font-semibold text-slate-900">Details</h2>
+
+                            <div class="border-b border-slate-100 py-3" aria-labelledby="rent-heading">
+                                <h3 id="rent-heading" class="text-xs font-semibold text-slate-500">Monthly rent</h3>
+                                <p class="mt-1 text-2xl font-bold tracking-tight text-slate-950">RM {{ number_format($listing->listing_rent, 2) }}<span class="text-sm font-medium text-slate-400"> / month</span></p>
+                            </div>
+
+                            <div class="border-b border-slate-100 py-3">
+                                <div>
+                                    <p class="text-xs font-medium text-slate-400">Room type</p>
+                                    <p class="mt-1 text-sm font-semibold text-slate-800">{{ $listing->room_type }} <span class="font-normal text-slate-500">&middot; @include('student.listings.pax-label')</span></p>
+                                </div>
+                            </div>
+
+                            <div class="py-3" aria-labelledby="poster-heading">
+                                <h3 id="poster-heading" class="text-sm font-bold text-slate-900">Posted by</h3>
+                                <div class="mt-3 flex items-center gap-3">
+                                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E0E7FF] text-xs font-semibold text-[#123568]">{{ strtoupper(substr($listing->user->user_name ?? 'S', 0, 1)) }}</div>
+                                    <div class="min-w-0">
+                                        <p class="break-words text-sm font-semibold leading-5 text-slate-900">{{ $listing->user->user_name ?? 'Unknown Student' }}</p>
+                                    </div>
+                                </div>
+                                @if(Auth::id() !== $listing->user_id)
+                                    <a href="{{ route('student.messages', ['userId' => $listing->user_id, 'listing_id' => $listing->getKey()]) }}" class="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700">
+                                        <i class="fa-regular fa-comment"></i>Send Message
+                                    </a>
+                                @else
+                                    <span class="mt-3 block rounded-xl bg-slate-100 px-4 py-2.5 text-center text-sm font-semibold text-slate-500">Your Listing</span>
+                                @endif
+                            </div>
+
+                            @if(Auth::id() === $listing->user_id)
+                                <a href="{{ route('student.listings.edit', $listing->getKey()) }}" class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2.5 text-sm font-semibold text-brand-600 transition hover:bg-brand-100">
+                                    <i class="fa-solid fa-pen-to-square"></i>Edit Listing
+                                </a>
+                            @else
+                                <div class="mt-3 grid grid-cols-2 gap-2">
+                                    @if($listing->listing_availability === 'available')
+                                        <form id="save-listing-form" action="{{ route('student.listings.save', $listing->getKey()) }}" method="POST">
+                                            @csrf
+                                            @php $isSaved = Auth::user()->savedListings()->where('listings.listing_id', $listing->getKey())->exists(); @endphp
+                                            <button type="submit" id="save-listing-button" class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2.5 text-sm font-semibold text-brand-600 transition hover:bg-brand-100">
+                                                <i id="save-listing-icon" class="{{ $isSaved ? 'fa-solid' : 'fa-regular' }} fa-bookmark"></i><span id="save-listing-label">{{ $isSaved ? 'Saved' : 'Save' }}</span>
+                                            </button>
+                                        </form>
+                                    @else
+                                        <span class="inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm font-semibold text-slate-500" title="This listing is rented and unavailable">
+                                            <i class="fa-solid fa-ban"></i><span>Unavailable</span>
+                                        </span>
+                                    @endif
+                                    <button type="button" onclick="document.getElementById('report-modal').classList.remove('hidden')" class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm font-semibold text-rose-600 transition hover:bg-rose-100">
+                                        <i class="fa-solid fa-triangle-exclamation"></i><span>Report</span>
+                                    </button>
+                                </div>
+                            @endif
+                        </section>
+                    </aside>
+                </div>
             </div>
 
         </div>
@@ -312,7 +272,7 @@
         <div class="flex w-full max-w-4xl flex-col items-center justify-center px-4 md:px-12">
             <img id="photo-viewer-image"
                  src="{{ count($listingPhotos) > 0 ? $listingPhotos[0] : '' }}"
-                 alt="{{ $listing->title }}"
+                 alt="{{ $listing->listing_title }}"
                  class="max-h-[80vh] w-full rounded-2xl object-contain shadow-2xl">
 
             @if(count($listingPhotos) > 1)
@@ -353,7 +313,7 @@
         </div>
 
         <form id="report-form"
-              action="{{ route('student.listings.report', $listing->id) }}"
+              action="{{ route('student.listings.report', $listing->getKey()) }}"
               method="POST"
               class="mt-4 space-y-4"
               onsubmit="appendReasonDetails()">
@@ -418,6 +378,39 @@
     const listingPhotos = @json($listingPhotos);
     let currentPhotoIndex = 0;
 
+    const saveListingForm = document.getElementById('save-listing-form');
+    const saveListingButton = document.getElementById('save-listing-button');
+    const saveListingIcon = document.getElementById('save-listing-icon');
+    const saveListingLabel = document.getElementById('save-listing-label');
+
+    saveListingForm?.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        saveListingButton.disabled = true;
+
+        try {
+            const response = await fetch(saveListingForm.action, {
+                method: 'POST',
+                body: new FormData(saveListingForm),
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            if (!response.ok) throw new Error('Unable to update saved listing.');
+
+            const result = await response.json();
+            saveListingIcon.classList.toggle('fa-solid', result.saved);
+            saveListingIcon.classList.toggle('fa-regular', !result.saved);
+            saveListingLabel.textContent = result.saved ? 'Saved' : 'Save';
+        } catch (error) {
+            saveListingForm.submit();
+            return;
+        } finally {
+            saveListingButton.disabled = false;
+        }
+    });
+
     function openPhotoViewer(index = 0) {
         if (!listingPhotos.length) return;
         currentPhotoIndex = index;
@@ -462,6 +455,34 @@
         if (counter) {
             counter.textContent = `${currentPhotoIndex + 1} / ${listingPhotos.length}`;
         }
+    }
+
+    function copyListingLink() {
+        const label = document.getElementById('copy-link-label');
+        const listingUrl = window.location.href;
+
+        const showCopiedState = function () {
+            label.textContent = 'Copied';
+            window.setTimeout(function () {
+                label.textContent = 'Share';
+            }, 1800);
+        };
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(listingUrl).then(showCopiedState);
+            return;
+        }
+
+        const temporaryInput = document.createElement('textarea');
+        temporaryInput.value = listingUrl;
+        temporaryInput.setAttribute('readonly', '');
+        temporaryInput.style.position = 'fixed';
+        temporaryInput.style.opacity = '0';
+        document.body.appendChild(temporaryInput);
+        temporaryInput.select();
+        document.execCommand('copy');
+        temporaryInput.remove();
+        showCopiedState();
     }
 
     document.getElementById('photo-viewer').addEventListener('click', function(event) {

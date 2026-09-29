@@ -23,20 +23,30 @@ class EncryptionHelper
 
     public static function decrypt($ciphertext)
     {
+        if (!is_string($ciphertext) || $ciphertext === '') {
+            return $ciphertext;
+        }
+
         $key = env('AES_KEY');
 
         $data = base64_decode($ciphertext);
+
+        if ($data === false || strlen($data) <= 16) {
+            return $ciphertext;
+        }
 
         $iv = substr($data, 0, 16);
 
         $encrypted = substr($data, 16);
 
-        return openssl_decrypt(
+        $decrypted = openssl_decrypt(
             $encrypted,
             'AES-256-CBC',
             $key,
             0,
             $iv
         );
+
+        return $decrypted === false ? $ciphertext : $decrypted;
     }
 }

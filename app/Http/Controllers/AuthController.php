@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
@@ -18,7 +19,10 @@ class AuthController extends Controller
     public function redirectToGoogle(): RedirectResponse
     {
         try {
-            return Socialite::driver('google')->stateless()->redirect();
+            return Socialite::driver('google')
+                ->stateless()
+                ->with(['prompt' => 'select_account'])
+                ->redirect();
         } catch (Exception $e) {
             Log::error('Google OAuth Redirect Error: ' . $e->getMessage());
             
@@ -37,7 +41,7 @@ class AuthController extends Controller
         try {
             // Retrieve Google user
             $googleUser = Socialite::driver('google')->stateless()->user();
-            $email = $googleUser->getEmail();
+            $email = strtolower(trim((string) $googleUser->getEmail()));
 
             if (empty($email)) {
                 return redirect()->route('login')->with(
@@ -59,23 +63,26 @@ class AuthController extends Controller
             // Find existing user or create a new user instance
             $user = User::firstOrCreate(
                 [
-                    'email' => $email,
+                    'user_email' => $email,
                 ],
                 [
-                    'name' => $googleUser->getName() ?? 'UPTM User',
+                    'user_name' => $googleUser->getName() ?? 'UPTM User',
                     'google_id' => $googleUser->getId(),
-                    'role' => $role,
+                    'user_role' => $role,
+                    // Support existing databases where password is still required.
+                    // Students authenticate with Google, not this random password.
+                    'password' => Str::random(64),
                 ]
             );
 
             // Synchronize Google ID and role attributes for existing users
             $user->update([
                 'google_id' => $googleUser->getId(),
-                'role' => $role,
+                'user_role' => $role,
             ]);
 
             // Prevent login for suspended accounts
-            if (!empty($user->suspended)) {
+            if (!empty($user->user_suspended)) {
                 return redirect()->route('login')->with(
                     'error',
                     'Your account has been suspended. Please contact MPP administration.'
@@ -85,9 +92,10 @@ class AuthController extends Controller
             // Login user and regenerate session to prevent session fixation attacks
             Auth::login($user);
             $request->session()->regenerate();
+            \App\Helpers\AuditLogger::log($user->getKey(), 'login', 'Google OAuth');
 
             // Role-based routing
-            if ($user->role === 'mpp') {
+            if ($user->user_role === 'mpp') {
                 return redirect()->intended(route('mpp.dashboard', [], false) ?? '/mpp/dashboard');
             }
 
@@ -109,16 +117,17 @@ class AuthController extends Controller
     public function logout(Request $request): RedirectResponse
     {
         try {
+            if (Auth::check()) \App\Helpers\AuditLogger::log(Auth::id(), 'logout');
             Auth::logout();
 
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            return redirect()->route('login')->with('success', 'You have been successfully logged out.');
+            return redirect('/')->with('success', 'You have been successfully logged out.');
         } catch (Exception $e) {
             Log::error('Logout Error: ' . $e->getMessage());
 
-            return redirect()->route('login');
+            return redirect('/');
         }
     }
 

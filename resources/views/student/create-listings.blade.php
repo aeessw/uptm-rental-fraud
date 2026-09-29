@@ -35,7 +35,8 @@
     </script>
 
     <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
 </head>
 <body class="bg-slate-50/80 font-sans text-slate-800 antialiased">
 
@@ -47,27 +48,10 @@
     <!-- Main Content Area -->
     <main class="flex h-full min-w-0 flex-1 flex-col overflow-y-auto">
 
-        <!-- Top Header -->
-        <header class="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200/60 bg-white/80 px-8 py-4 backdrop-blur-md">
-            <div>
-                <h2 class="text-base font-bold tracking-tight text-slate-900">Post a Room</h2>
-            </div>
-
-            <!-- User Profile Header -->
-            <div class="flex items-center space-x-3">
-                <div class="text-right">
-                    <div class="mb-1 text-xs font-bold leading-none text-slate-900">{{ Auth::user()->name ?? 'Ahmad Farhan' }}</div>
-                    <div class="text-[11px] font-medium leading-none text-slate-400">{{ Auth::user()->email ?? 'farhan@student.uptm.edu.my' }}</div>
-                </div>
-                <div class="flex h-9 w-9 items-center justify-center rounded-full border border-brand-100 bg-brand-50 text-xs font-bold uppercase text-brand-600 ring-2 ring-brand-500/10">
-                    {{ strtoupper(substr(Auth::user()->name ?? 'AF', 0, 2)) }}
-                </div>
-            </div>
-        </header>
 
         <!-- Page Body Content -->
-        <div class="p-8">
-            <div class="mx-auto max-w-4xl space-y-6">
+        <div class="p-4 sm:p-6">
+            <div class="w-full space-y-5">
 
                 <!-- Validation Errors Alert -->
                 @if ($errors->any())
@@ -88,10 +72,10 @@
                 <div class="overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-xs">
                     
                     <!-- Card Header -->
-                    <div class="border-b border-slate-100 px-8 py-6">
+                    <div class="border-b border-slate-100 px-5 py-4 sm:px-6">
                         <h3 class="text-base font-bold text-slate-900">Room Details</h3>
                         <p class="mt-1 text-xs font-medium text-slate-400">
-                            Fill in the details below to post your room. Your student identity will be attached to verify this listing.
+                            Fill in the details below to post your room. Your UPTM account will be linked to this listing for accountability and safety.
                         </p>
                     </div>
 
@@ -102,13 +86,13 @@
                           id="listing-form">
                         @csrf
 
-                        <div class="space-y-6 p-8">
+                        <div class="space-y-5 p-5 sm:p-6">
 
                             <!-- Room Title & Type -->
-                            <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+                            <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
                                 
                                 <!-- Room Name -->
-                                <div class="space-y-1.5 md:col-span-2">
+                                <div class="space-y-1.5 lg:col-span-2">
                                     <label class="block text-xs font-bold text-slate-700">
                                         Room Name <span class="text-rose-500">*</span>
                                     </label>
@@ -141,10 +125,10 @@
                             </div>
 
                             <!-- Location & Rent -->
-                            <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+                            <div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
                                 
                                 <!-- Location -->
-                                <div class="space-y-1.5 md:col-span-2">
+                                <div class="space-y-1.5 lg:col-span-2">
                                     <label class="block text-xs font-bold text-slate-700">
                                         Location <span class="text-rose-500">*</span>
                                     </label>
@@ -177,6 +161,8 @@
                                 </div>
                             </div>
 
+                            @include('student.listings.preferences-fields')
+
                             <!-- Description -->
                             <div class="space-y-1.5">
                                 <label class="block text-xs font-bold text-slate-700">
@@ -189,6 +175,8 @@
                                           required>{{ old('description') }}</textarea>
                             </div>
 
+                            @include('student.listings.facilities-fields')
+
                             <!-- Photo Upload Section -->
                             <div class="space-y-2 pt-2">
                                 <div class="flex items-center justify-between">
@@ -196,13 +184,13 @@
                                         Room Photos <span class="text-rose-500">*</span>
                                     </label>
                                     <span id="photo-count" class="text-[11px] font-semibold text-slate-400">
-                                        0 / 10 photos
+                                        0 / 10 photos (minimum 3)
                                     </span>
                                 </div>
 
                                 <!-- Drag & Drop Box -->
                                 <div id="upload-area"
-                                     class="group relative overflow-hidden rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-8 text-center transition hover:border-brand-500/50 hover:bg-brand-50/30">
+                                     class="group relative overflow-hidden rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-5 text-center transition hover:border-brand-500/50 hover:bg-brand-50/30">
                                     <input type="file"
                                            name="photos[]"
                                            id="photos"
@@ -216,11 +204,11 @@
                                         </div>
                                         <p class="mt-3 text-xs font-bold text-slate-900">Choose room photos</p>
                                         <p class="mt-1 text-[11px] font-medium text-slate-400">
-                                            Click here to select photos. You can add more photos later.
+                                            Select at least 3 photos. You can add more photos later.
                                         </p>
                                         <div class="mt-3 inline-flex items-center rounded-full border border-slate-200/60 bg-white px-3 py-1 text-[10px] font-medium text-slate-500 shadow-2xs">
                                             <i class="fa-solid fa-shield-halved mr-1.5 text-emerald-500"></i>
-                                            JPG, PNG or WEBP · Max 5MB per photo · Up to 10 photos
+                                            JPG, PNG or WEBP · Max 5MB per photo · 3 to 10 photos
                                         </div>
                                     </div>
                                 </div>
@@ -230,18 +218,27 @@
 
                                 <p class="text-[11px] font-medium text-slate-400">
                                     <i class="fa-solid fa-circle-info mr-1 text-slate-400"></i>
-                                    You can click the upload box again to add more photos.
+                                    Select at least 3 photos before posting. You can click the upload box again to add more photos.
                                 </p>
                             </div>
 
+                            <section class="rounded-xl border border-blue-200 bg-blue-50 p-4 text-xs text-slate-700" aria-labelledby="listing-safety-heading">
+                                <h4 id="listing-safety-heading" class="font-semibold text-blue-600"><i class="fa-solid fa-shield-halved mr-2" aria-hidden="true"></i>Listing Safety</h4>
+                                <p class="mt-2">Your UPTM account is linked to this listing. Providing false or misleading information may result in the listing being reported and reviewed by MPP.</p>
+                            </section>
+                            <label class="flex cursor-pointer items-start gap-3 text-xs text-slate-700">
+                                <input id="accuracy-confirmed" type="checkbox" name="accuracy_confirmed" value="1" required @checked(old('accuracy_confirmed')) class="mt-0.5 h-4 w-4 shrink-0 rounded border-slate-300">
+                                <span>I confirm that the information and photos provided are accurate and belong to this room listing.</span>
+                            </label>
+
                             <!-- Buttons -->
-                            <div class="flex items-center justify-end space-x-3 border-t border-slate-100 pt-6">
+                            <div class="flex items-center justify-end space-x-3 border-t border-slate-100 pt-4">
                                 <a href="{{ route('student.listings') }}"
                                    class="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50">
                                     Cancel
                                 </a>
-                                <button type="submit"
-                                        class="flex items-center space-x-2 rounded-xl bg-brand-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-brand-700 active:scale-95">
+                                <button type="submit" id="post-room-button" disabled
+                                        class="flex items-center space-x-2 rounded-xl bg-brand-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs transition hover:bg-brand-700 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
                                     <i class="fa-solid fa-paper-plane text-[11px]"></i>
                                     <span>Post Room</span>
                                 </button>
@@ -261,6 +258,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     let selectedFiles = [];
+    const minPhotos = 3;
     const maxPhotos = 10;
     const maxFileSize = 5 * 1024 * 1024;
 
@@ -269,6 +267,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const photoCount = document.getElementById('photo-count');
     const form = document.getElementById('listing-form');
     const uploadArea = document.getElementById('upload-area');
+    const confirmation = document.getElementById('accuracy-confirmed');
+    const postButton = document.getElementById('post-room-button');
+    const syncConfirmation = () => { postButton.disabled = !confirmation.checked; };
+    confirmation.addEventListener('change', syncConfirmation);
+    window.addEventListener('pageshow', syncConfirmation);
+    syncConfirmation();
 
     input.addEventListener('change', function () {
         const files = Array.from(this.files);
@@ -305,8 +309,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     form.addEventListener('submit', function (event) {
-        if (selectedFiles.length === 0) {
-            alert('Please select at least 1 photo.');
+        if (selectedFiles.length < minPhotos) {
+            alert('Please select at least ' + minPhotos + ' photos.');
             event.preventDefault();
             return;
         }
@@ -321,7 +325,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updatePreview() {
         preview.innerHTML = '';
-        photoCount.textContent = selectedFiles.length + ' / ' + maxPhotos + ' photos';
+        photoCount.textContent = selectedFiles.length + ' / ' + maxPhotos + ' photos (minimum ' + minPhotos + ')';
 
         selectedFiles.forEach(function (file, index) {
             const photoBox = document.createElement('div');

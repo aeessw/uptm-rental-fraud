@@ -9,6 +9,10 @@ class ListingPhoto extends Model
 {
     use HasFactory;
 
+    protected $primaryKey = 'photo_id';
+    public const CREATED_AT = 'photo_created_at';
+    public const UPDATED_AT = 'photo_updated_at';
+
     protected $fillable = [
         'listing_id',
         'photo_path',
@@ -16,6 +20,6 @@ class ListingPhoto extends Model
 
     public function listing()
     {
-        return $this->belongsTo(Listing::class);
+        return $this->belongsTo(Listing::class, 'listing_id', 'listing_id');
     }
 }

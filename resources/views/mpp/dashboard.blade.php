@@ -68,9 +68,10 @@
 
     <link
         rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous"
     >
 
+    <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
 </head>
 
 
@@ -95,80 +96,10 @@
     <!-- MAIN CONTENT -->
     <!-- ===================================================== -->
 
-    <main class="ml-0 min-w-0 md:ml-64">
+    <main class="ml-0 min-w-0 md:ml-[280px]">
 
 
-        <!-- ===================================================== -->
-        <!-- TOP HEADER -->
-        <!-- ===================================================== -->
 
-        <header
-            class="sticky top-0 z-40 flex items-center justify-between
-                   border-b border-slate-200/60
-                   bg-white/90 px-8 py-4
-                   backdrop-blur-md"
-        >
-
-            <!-- Page Title -->
-
-            <div>
-
-                <h2 class="text-base font-bold tracking-tight text-slate-900">
-
-                    MPP Admin Dashboard
-
-                </h2>
-
-            </div>
-
-
-            <!-- ================================================= -->
-            <!-- ADMIN PROFILE -->
-            <!-- ================================================= -->
-
-            <div class="flex items-center space-x-3">
-
-
-                <div class="text-right">
-
-                    <div
-                        class="mb-0.5 text-xs font-bold
-                               leading-none text-slate-900"
-                    >
-
-                        {{ Auth::user()->name }}
-
-                    </div>
-
-
-                    <div
-                        class="text-[11px] font-medium
-                               leading-none text-slate-400"
-                    >
-
-                        {{ Auth::user()->email }}
-
-                    </div>
-
-                </div>
-
-
-                <!-- Avatar -->
-
-                <div
-                    class="flex h-9 w-9 items-center justify-center
-                           rounded-full border border-brand-100
-                           bg-brand-50 text-xs font-bold uppercase
-                           text-brand-600 ring-2 ring-brand-500/10"
-                >
-
-                    {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
-
-                </div>
-
-            </div>
-
-        </header>
 
 
 
@@ -176,56 +107,11 @@
         <!-- PAGE CONTENT -->
         <!-- ===================================================== -->
 
-        <div class="space-y-8 p-8">
+        <div class="mpp-page-content space-y-4 p-4 md:p-6">
 
 
-            <!-- ===================================================== -->
-            <!-- WELCOME BANNER -->
-            <!-- ===================================================== -->
-
-            <section
-                class="flex items-center justify-between
-                       rounded-2xl border border-slate-200/60
-                       bg-white p-6 shadow-sm"
-            >
-
-                <div>
-
-                    <h1 class="text-lg font-bold text-slate-900">
-
-                        Welcome, {{ Auth::user()->name }}
-
-                    </h1>
-
-
-                    <p class="mt-1 text-xs font-medium text-slate-500">
-
-                        Manage rental listings, reports and student accounts.
-
-                    </p>
-
-                </div>
-
-
-                <!-- MPP STATUS -->
-
-                <span
-                    class="flex items-center space-x-1.5
-                           rounded-full border border-emerald-500/20
-                           bg-emerald-500/10 px-3 py-1
-                           text-[11px] font-bold text-emerald-700"
-                >
-
-                    <span
-                        class="h-1.5 w-1.5 rounded-full
-                               bg-emerald-500"
-                    ></span>
-
-                    <span>MPP</span>
-
-                </span>
-
-            </section>
+            <!-- Welcome -->
+@include('mpp.page-heading', ['title' => 'Dashboard', 'description' => 'Monitor rental listings, student accounts, and recent moderation activity.'])
 
 
 
@@ -264,30 +150,6 @@
             <!-- ===================================================== -->
 
             <section>
-
-
-                <!-- Section Header -->
-
-                <div class="mb-4">
-
-                    <h2
-                        class="text-xs font-bold uppercase
-                               tracking-wider text-slate-900"
-                    >
-
-                        System Overview
-
-                    </h2>
-
-
-                    <p class="mt-1 text-xs text-slate-400">
-
-                        Current status of the rental platform.
-
-                    </p>
-
-                </div>
-
 
 
                 <!-- ================================================= -->
@@ -628,11 +490,11 @@
                 <!-- Header -->
                 <div class="mb-4 flex items-center justify-between">
                     <div>
-                        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-900">
+                        <h2 class="text-sm font-semibold text-slate-900">
                             Recent Activity
                         </h2>
                         <p class="mt-1 text-xs text-slate-400">
-                            Latest actions recorded in the system.
+                            Latest account and moderation events.
                         </p>
                     </div>
 
@@ -654,52 +516,38 @@
 
                         @foreach($auditLogs->take(5) as $log)
 
-                            <!-- ================================================= -->
-                            <!-- ACTIVITY ITEM (PRO UI HORIZONTAL ROW) -->
-                            <!-- ================================================= -->
-
-                            <div class="grid grid-cols-1 items-center gap-2 border-b border-slate-100 px-5 py-4 last:border-b-0 md:grid-cols-12 md:gap-4">
-
-                                <!-- 1. ACTION & ICON (Columns 1-4) -->
-                                <div class="flex min-w-0 items-center space-x-3 md:col-span-4">
-                                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
-                                        <i class="fa-solid fa-shield-halved text-xs"></i>
-                                    </div>
-
-                                    <p class="truncate text-xs font-bold text-slate-800">
-                                        {{ $log->action }}
-                                    </p>
+                            @php
+                                $activityLabel = match($log->audit_action) {
+                                    'login', 'google_login' => 'Logged in',
+                                    'removed_listing', 'hidden_listing' => 'Hidden listing',
+                                    'listing_auto_hidden' => 'Automatically hidden listing',
+                                    'suspended_user', 'suspended_student' => 'Suspended student',
+                                    'unsuspended_user' => 'Unsuspended student',
+                                    'auto_suspended_user' => 'Automatically suspended student',
+                                    default => ucfirst(str_replace('_', ' ', $log->audit_action)),
+                                };
+                                $activityIcon = match($log->audit_action) {
+                                    'restored_listing' => 'fa-rotate-left',
+                                    'reported_listing' => 'fa-flag',
+                                    'created_listing' => 'fa-house',
+                                    'suspended_user', 'suspended_student', 'auto_suspended_user' => 'fa-user-slash',
+                                    'unsuspended_user' => 'fa-user-check',
+                                    default => 'fa-shield-halved',
+                                };
+                                $targetLabel = in_array($log->audit_action, ['login', 'google_login']) ? 'Account login' : ($log->audit_target ?: 'Account activity');
+                                if ($log->listingId()) {
+                                    $targetLabel = ($log->auditListing?->listing_title ? $log->auditListing->listing_title.' '.mb_chr(183).' ' : '').'Listing #'.$log->listingId();
+                                } elseif (preg_match('/User ID: ?([0-9]+)/', (string) $log->audit_target, $targetUser)) {
+                                    $targetLabel = ($log->affectedUser?->user_name ? $log->affectedUser->user_name.' '.mb_chr(183).' ' : '').'Student #'.$targetUser[1];
+                                }
+                            @endphp
+                            <div class="grid items-center gap-3 border-b border-slate-100 px-5 py-4 last:border-b-0 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto]">
+                                <div class="flex min-w-0 items-center gap-3">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500"><i class="fa-solid {{ $activityIcon }}" aria-hidden="true"></i></span>
+                                    <div class="min-w-0"><p class="text-sm font-semibold text-slate-800">{{ $activityLabel }}</p><p class="mt-1 truncate text-xs text-slate-500" title="{{ $targetLabel }}">{{ $targetLabel }}</p></div>
                                 </div>
-
-                                <!-- 2. USER (Columns 5-7) -->
-                                <div class="min-w-0 md:col-span-3">
-                                    <p class="truncate text-[11px] text-slate-500">
-                                        <span class="font-semibold text-slate-600">By:</span>
-                                        @if($log->user)
-                                            {{ $log->user->name }}
-                                        @else
-                                            System
-                                        @endif
-                                    </p>
-                                </div>
-
-                                <!-- 3. DESCRIPTION (Columns 8-10) -->
-                                <div class="min-w-0 md:col-span-3">
-                                    <p class="truncate text-[10px] text-slate-400">
-                                        {{ $log->description ?? 'System activity recorded.' }}
-                                    </p>
-                                </div>
-
-                                <!-- 4. DATE & TIME (Columns 11-12) -->
-                                <div class="shrink-0 text-left md:col-span-2 md:text-right">
-                                    <p class="text-[10px] font-semibold text-slate-500">
-                                        {{ $log->created_at->format('d M Y') }}
-                                    </p>
-                                    <p class="mt-0.5 text-[10px] text-slate-400">
-                                        {{ $log->created_at->format('h:i A') }}
-                                    </p>
-                                </div>
-
+                                <div class="min-w-0"><p class="text-xs text-slate-400">Performed by</p><p class="mt-1 truncate text-sm font-semibold text-slate-700" title="{{ $log->user?->user_name ?? 'System' }}">{{ $log->user?->user_name ?? 'System' }}</p></div>
+                                <time class="whitespace-nowrap text-xs text-slate-500 md:text-right">{{ $log->audit_created_at->format('d M Y') }} &middot; {{ $log->audit_created_at->format('h:i A') }}</time>
                             </div>
 
                         @endforeach

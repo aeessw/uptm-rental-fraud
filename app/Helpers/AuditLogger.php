@@ -15,14 +15,18 @@ class AuditLogger
         $hmac = hash_hmac(
             'sha256',
             $data,
-            env('HMAC_KEY')
+            config('audit.hmac_key')
         );
 
-        return AuditLog::create([
+        $log = new AuditLog([
             'user_id' => $userId,
-            'action' => $action,
-            'target' => $target,
-            'hmac' => $hmac,
+            'audit_action' => $action,
+            'audit_target' => $target,
+            'audit_hmac' => $hmac,
         ]);
+        $log->audit_created_at = $timestamp;
+        $log->audit_updated_at = $timestamp;
+        $log->save();
+        return $log;
     }
 }

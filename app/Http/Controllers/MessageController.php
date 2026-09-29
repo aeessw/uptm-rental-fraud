@@ -3,305 +3,211 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\EncryptionHelper;
+use App\Helpers\AuditLogger;
 use App\Models\Message;
+use App\Models\Listing;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class MessageController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | SEND MESSAGE
-    |--------------------------------------------------------------------------
-    */
-
     public function store(Request $request)
     {
-        $request->validate([
-            'receiver_id' => 'required|exists:users,id',
+        $data = $request->validate([
+            'receiver_id' => 'required|exists:users,user_id',
+            'listing_id' => 'nullable|exists:listings,listing_id',
             'message' => 'required|string|max:5000',
         ]);
-
-        $currentUserId = Auth::id();
-        $receiverId = (int) $request->receiver_id;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Prevent messaging yourself
-        |--------------------------------------------------------------------------
-        */
-
-        if ($receiverId === (int) $currentUserId) {
-
-            return back()->with(
-                'error',
-                'You cannot message yourself.'
-            );
+        if ((int) $data['receiver_id'] === (int) $request->user()->getKey()) {
+            return $request->expectsJson()
+                ? response()->json(['message' => 'You cannot message yourself.'], 422)
+                : back()->with('error', 'You cannot message yourself.');
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Encrypt and save message
-        |--------------------------------------------------------------------------
-        */
+        $recipient = User::findOrFail($data['receiver_id']);
+        if ($request->user()->blockedUsers()->whereKey($recipient->getKey())->exists()) {
+            return $request->expectsJson()
+                ? response()->json(['message' => 'You blocked this user. Unblock them to continue messaging.'], 422)
+                : back()->with('error', 'You blocked this user. Unblock them to continue messaging.');
+        }
+        if ($request->user()->blockedByUsers()->whereKey($recipient->getKey())->exists()) {
+            return $request->expectsJson()
+                ? response()->json(['message' => 'Messaging is unavailable for this conversation.'], 422)
+                : back()->with('error', 'Messaging is unavailable for this conversation.');
+        }
 
-        Message::create([
-            'sender_id' => $currentUserId,
-            'receiver_id' => $receiverId,
-            'message' => EncryptionHelper::encrypt(
-                $request->message
-            ),
+        $message = Message::create([
+            'sender_id' => $request->user()->getKey(),
+            'receiver_id' => $data['receiver_id'],
+            'listing_id' => $data['listing_id'] ?? null,
+            'message_content' => EncryptionHelper::encrypt($data['message']),
         ]);
-
-        /*
-        |--------------------------------------------------------------------------
-        | Return to SAME conversation
-        |--------------------------------------------------------------------------
-        |
-        | No "Message sent." message.
-        |
-        */
-
-        return redirect()->route('student.messages', [
-            'userId' => $receiverId
-        ]);
+        AuditLogger::log($request->user()->getKey(), 'sent_message', 'Message ID: '.$message->getKey().' | User ID: '.$recipient->getKey().($message->listing_id ? ' | Listing ID: '.$message->listing_id : ''));
+        if ($request->expectsJson()) {
+            return response()->json(['html' => $this->conversationView($recipient)->getContent()], 201);
+        }
+        return redirect()->route('student.messages', array_filter([
+            'userId' => $data['receiver_id'],
+            'listing_id' => $data['listing_id'] ?? null,
+        ]));
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | SHOW SPECIFIC CONVERSATION
-    |--------------------------------------------------------------------------
-    */
 
     public function index($userId)
     {
-        $currentUserId = Auth::id();
-        $userId = (int) $userId;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Cannot chat with yourself
-        |--------------------------------------------------------------------------
-        */
-
-        if ($userId === (int) $currentUserId) {
-
-            return redirect()
-                ->route('student.message.inbox')
-                ->with(
-                    'error',
-                    'You cannot open your own chat.'
-                );
+        if ((int) $userId === (int) auth()->id()) {
+            return redirect()->route('student.message.inbox');
         }
-
-        /*
-        |--------------------------------------------------------------------------
-        | Find selected user
-        |--------------------------------------------------------------------------
-        */
-
-        $user = User::find($userId);
-
-        if (!$user) {
-
-            return redirect()
-                ->route('student.message.inbox')
-                ->with(
-                    'error',
-                    'The selected user could not be found.'
-                );
-        }
-
-        /*
-        |--------------------------------------------------------------------------
-        | GET ALL MESSAGES INVOLVING CURRENT USER
-        |--------------------------------------------------------------------------
-        */
-
-        $allMessages = Message::where('sender_id', $currentUserId)
-            ->orWhere('receiver_id', $currentUserId)
-            ->orderBy('created_at', 'asc')
-            ->get();
-
-        /*
-        |--------------------------------------------------------------------------
-        | GET OTHER USER IDS
-        |--------------------------------------------------------------------------
-        */
-
-        $conversationUserIds = $allMessages
-            ->map(function ($message) use ($currentUserId) {
-
-                if ((int) $message->sender_id === (int) $currentUserId) {
-                    return $message->receiver_id;
-                }
-
-                return $message->sender_id;
-            })
-            ->filter()
-            ->unique()
-            ->values();
-
-        /*
-        |--------------------------------------------------------------------------
-        | GET USERS FOR INBOX
-        |--------------------------------------------------------------------------
-        */
-
-        $users = User::whereIn(
-            'id',
-            $conversationUserIds
-        )
-        ->get();
-
-        /*
-        |--------------------------------------------------------------------------
-        | GET ONLY SELECTED CONVERSATION
-        |--------------------------------------------------------------------------
-        */
-
-        $messages = Message::where(function ($query) use (
-            $currentUserId,
-            $userId
-        ) {
-
-            $query->where('sender_id', $currentUserId)
-                ->where('receiver_id', $userId);
-
-        })
-        ->orWhere(function ($query) use (
-            $currentUserId,
-            $userId
-        ) {
-
-            $query->where('sender_id', $userId)
-                ->where('receiver_id', $currentUserId);
-
-        })
-        ->orderBy('created_at', 'asc')
-        ->get();
-
-        /*
-        |--------------------------------------------------------------------------
-        | DECRYPT MESSAGES
-        |--------------------------------------------------------------------------
-        */
-
-        $messages->transform(function ($message) {
-
-            $message->message =
-                EncryptionHelper::decrypt($message->message);
-
-            return $message;
-        });
-
-        /*
-        |--------------------------------------------------------------------------
-        | SHOW SAME MESSAGES PAGE
-        |--------------------------------------------------------------------------
-        */
-
-        return view('student.messages', [
-            'users' => $users,
-            'user' => $user,
-            'messages' => $messages,
-        ]);
+        return $this->conversationView(User::findOrFail($userId));
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | INBOX
-    |--------------------------------------------------------------------------
-    */
 
     public function inbox()
     {
-        $currentUserId = Auth::id();
+        return $this->conversationView();
+    }
 
-        /*
-        |--------------------------------------------------------------------------
-        | GET ALL MESSAGES INVOLVING CURRENT USER
-        |--------------------------------------------------------------------------
-        */
+    private function conversationView(?User $user = null)
+    {
+        $id = auth()->id();
 
-        $allMessages = Message::where('sender_id', $currentUserId)
-            ->orWhere('receiver_id', $currentUserId)
-            ->orderBy('created_at', 'asc')
-            ->get();
+        if ($user && request()->filled('listing_id')) {
+            $conversationListing = Listing::visibleTo(auth()->user())->whereKey(request('listing_id'))
+                ->where(function ($query) use ($user, $id) {
+                    $query->where('user_id', $user->getKey())->orWhere('user_id', $id);
+                })
+                ->first();
 
-        /*
-        |--------------------------------------------------------------------------
-        | GET OTHER USER IDS
-        |--------------------------------------------------------------------------
-        */
+            if ($conversationListing) {
+                Message::where(function ($query) use ($user, $id) {
+                    $query->where(function ($thread) use ($id, $user) {
+                        $thread->where('sender_id', $id)->where('receiver_id', $user->getKey());
+                    })->orWhere(function ($thread) use ($id, $user) {
+                        $thread->where('sender_id', $user->getKey())->where('receiver_id', $id);
+                    });
+                })->whereNull('listing_id')->update(['listing_id' => $conversationListing->getKey()]);
+            }
+        }
 
-        $conversationUserIds = $allMessages
-            ->map(function ($message) use ($currentUserId) {
+        $all = Message::with('listing')->where('sender_id', $id)->orWhere('receiver_id', $id)
+            ->orderBy('message_id')->get();
+        $threads = $all->groupBy(fn ($message) => (int) $message->sender_id === (int) $id
+            ? $message->receiver_id : $message->sender_id);
+        $users = User::whereIn('user_id', $threads->keys())->get()->map(function ($contact) use ($threads, $id) {
+            $thread = $threads->get($contact->getKey());
+            $last = $thread->last();
+            $contact->last_message = EncryptionHelper::decrypt($last->message_content);
+            $contact->last_message_at = $last->message_created_at;
+            $contact->last_message_id = $last->getKey();
+            $contact->unread_count = $thread->filter(fn ($message) =>
+                (int) $message->receiver_id === (int) $id && !$message->message_read_at)->count();
+            return $contact;
+        })->reject(fn ($contact) => auth()->user()->blockedUsers()->whereKey($contact->getKey())->exists())
+            ->sortByDesc('last_message_id')->values();
+        $messages = $user ? $threads->get($user->getKey(), collect()) : collect();
+        $isBlocked = $user && auth()->user()->blockedUsers()->whereKey($user->getKey())->exists();
+        $isBlockedBy = $user && auth()->user()->blockedByUsers()->whereKey($user->getKey())->exists();
+        $messages->each(function ($message) {
+            $message->message_content = EncryptionHelper::decrypt($message->message_content);
+        });
+        $conversationListing = $messages
+            ->sortByDesc('message_id')
+            ->first(fn ($message) => $message->listing_id !== null)?->listing;
 
-                if ((int) $message->sender_id === (int) $currentUserId) {
-                    return $message->receiver_id;
-                }
+        if (!$conversationListing && request('listing_id')) {
+            $conversationListing = Listing::visibleTo(auth()->user())->find(request('listing_id'));
+        }
 
-                return $message->sender_id;
-            })
-            ->filter()
-            ->unique()
-            ->values();
+        if ($isBlocked || $isBlockedBy || ($conversationListing
+            && ! Listing::visibleTo(auth()->user())->whereKey($conversationListing->getKey())->exists())) {
+            $conversationListing = null;
+        }
 
-        /*
-        |--------------------------------------------------------------------------
-        | GET USERS
-        |--------------------------------------------------------------------------
-        */
+        return response()->view('student.messages', compact('users', 'user', 'messages', 'conversationListing', 'isBlocked', 'isBlockedBy'))
+            ->header('Cache-Control', 'no-store');
+    }
 
-        $users = User::whereIn(
-            'id',
-            $conversationUserIds
-        )
-        ->get();
+    public function block(Request $request, User $user)
+    {
+        abort_if($user->getKey() === $request->user()->getKey() || $user->user_role !== 'student', 403);
+        $changes = $request->user()->blockedUsers()->syncWithoutDetaching([$user->getKey()]);
+        if ($changes['attached']) AuditLogger::log($request->user()->getKey(), 'blocked_user', 'User ID: '.$user->getKey());
+        return back()->with('success', 'User blocked. You can unblock them in Profile settings.');
+    }
 
-        /*
-        |--------------------------------------------------------------------------
-        | IMPORTANT:
-        | DO NOT SELECT FIRST USER
-        |--------------------------------------------------------------------------
-        |
-        | /student/messages should open with:
-        |
-        | LEFT  = Inbox
-        | RIGHT = No conversation selected
-        |
-        | A conversation is only selected after clicking a user.
-        |
-        */
+    public function unblockFromSettings(Request $request, User $user)
+    {
+        if ($request->user()->blockedUsers()->detach($user->getKey())) AuditLogger::log($request->user()->getKey(), 'unblocked_user', 'User ID: '.$user->getKey());
+        return back()->with('success', 'User unblocked.');
+    }
 
-        $user = null;
+    public function unblock(Request $request, $userId)
+    {
+        if ($request->user()->blockedUsers()->detach($userId)) AuditLogger::log($request->user()->getKey(), 'unblocked_user', 'User ID: '.$userId);
 
-        /*
-        |--------------------------------------------------------------------------
-        | No messages are loaded here
-        |--------------------------------------------------------------------------
-        |
-        | Messages are only loaded by index($userId)
-        | after the user clicks a conversation.
-        |
-        */
+        return redirect()->route('student.messages', ['userId' => $userId])
+            ->with('success', 'User unblocked.');
+    }
 
-        $messages = collect();
+    public function deleteConversation(Request $request, $userId)
+    {
+        $deleted = Message::where(function ($query) use ($request, $userId) {
+            $query->where(function ($thread) use ($request, $userId) {
+                $thread->where('sender_id', $request->user()->getKey())->where('receiver_id', $userId);
+            })->orWhere(function ($thread) use ($request, $userId) {
+                $thread->where('sender_id', $userId)->where('receiver_id', $request->user()->getKey());
+            });
+        })->delete();
 
-        /*
-        |--------------------------------------------------------------------------
-        | SHOW MESSAGE PAGE
-        |--------------------------------------------------------------------------
-        */
+        if ($deleted) AuditLogger::log($request->user()->getKey(), 'deleted_conversation', 'User ID: '.$userId);
+        return redirect()->route('student.message.inbox')->with('success', 'Conversation deleted.');
+    }
 
-        return view('student.messages', [
-            'users' => $users,
-            'user' => $user,
-            'messages' => $messages,
-        ]);
+    public function unreadCount(Request $request)
+    {
+        $unreadMessageQuery = Message::where('receiver_id', $request->user()->getKey())
+            ->whereNull('message_read_at');
+        $unreadMessages = (clone $unreadMessageQuery)->count();
+        $recentUnreadMessages = $unreadMessageQuery->with('sender:user_id,user_name')
+            ->latest()
+            ->take(5)
+            ->get(['message_id', 'sender_id']);
+
+        $newListings = Listing::visibleTo(auth()->user())->where('listing_status', 'active')
+            ->where('user_id', '!=', $request->user()->getKey())
+            ->where('listing_created_at', '>=', now()->subDay())
+            ->latest()
+            ->take(5)
+            ->get(['listing_id', 'listing_title', 'listing_created_at']);
+
+        return response()->json([
+            'count' => $unreadMessages,
+            'unread_messages' => $recentUnreadMessages->map(fn ($message) => [
+                'sender' => $message->sender?->user_name ?? 'Someone',
+            ])->values(),
+            'new_listings_count' => $newListings->count(),
+            'new_listings' => $newListings->map(fn ($listing) => [
+                'id' => $listing->getKey(),
+                'title' => $listing->listing_title,
+            ])->values(),
+        ])->header('Cache-Control', 'no-store');
+    }
+
+    public function markRead(Request $request, $userId)
+    {
+        $data = $request->validate(['through_id' => 'required|integer|min:1']);
+        $read = Message::where('receiver_id', $request->user()->getKey())
+            ->where('sender_id', $userId)->where('message_id', '<=', $data['through_id'])
+            ->whereNull('message_read_at')->update(['message_read_at' => now()]);
+        if ($read) AuditLogger::log($request->user()->getKey(), 'read_messages', 'User ID: '.$userId);
+        return response()->noContent();
+    }
+
+    public function markAllRead(Request $request)
+    {
+        $read = Message::where('receiver_id', $request->user()->getKey())
+            ->whereNull('message_read_at')
+            ->update(['message_read_at' => now()]);
+
+        if ($read) AuditLogger::log($request->user()->getKey(), 'read_all_messages');
+        return response()->noContent();
     }
 }

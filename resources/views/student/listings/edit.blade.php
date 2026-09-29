@@ -13,8 +13,10 @@
     <!-- Font Awesome -->
     <link
         rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous"
     >
+    <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 
 <body class="bg-[#F8FAFC] min-h-screen font-sans text-slate-800 antialiased">
@@ -42,11 +44,11 @@
 
             <div class="mb-6">
 
-                <h2 class="text-2xl font-bold text-slate-900">
+                <h2 class="dashboard-form-title text-lg font-semibold text-slate-900">
                     Edit Your Room
                 </h2>
 
-                <p class="mt-1 text-sm text-slate-500">
+                <p class="mt-1 text-xs text-slate-500">
                     Update your listing information and manage your photos.
                 </p>
 
@@ -121,7 +123,7 @@
 
             <form
                 id="listing-form"
-                action="{{ route('student.listings.update', $listing->id) }}"
+                action="{{ route('student.listings.update', $listing->getKey()) }}"
                 method="POST"
                 enctype="multipart/form-data"
             >
@@ -174,7 +176,7 @@
                                 id="title"
                                 type="text"
                                 name="title"
-                                value="{{ old('title', $listing->title) }}"
+                                value="{{ old('title', $listing->listing_title) }}"
                                 required
                                 class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500"
                                 placeholder="Example: Kelana D' Putera"
@@ -186,6 +188,9 @@
                         <!-- ================================================= -->
                         <!-- DESCRIPTION -->
                         <!-- ================================================= -->
+
+                        @include('student.listings.preferences-fields')
+                        @include('student.listings.facilities-fields')
 
                         <div>
 
@@ -203,7 +208,7 @@
                                 required
                                 class="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs leading-5 text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500"
                                 placeholder="Describe your room..."
-                            >{{ old('description', $listing->description) }}</textarea>
+                            >{{ old('description', $listing->listing_description) }}</textarea>
 
                         </div>
 
@@ -233,7 +238,7 @@
                                         id="location"
                                         type="text"
                                         name="location"
-                                        value="{{ old('location', $listing->location) }}"
+                                        value="{{ old('location', $listing->listing_location) }}"
                                         required
                                         class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-10 pr-4 text-xs text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500"
                                         placeholder="Example: Cheras"
@@ -267,7 +272,7 @@
                                         name="rent"
                                         step="0.01"
                                         min="0"
-                                        value="{{ old('rent', $listing->rent) }}"
+                                        value="{{ old('rent', $listing->listing_rent) }}"
                                         required
                                         class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-12 pr-4 text-xs text-slate-700 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500"
                                     >
@@ -337,42 +342,36 @@
                             </div>
 
 
-                            <!-- STATUS -->
-
-                            <div>
-
-                                <label class="mb-1.5 block text-xs font-semibold text-slate-700">
-                                    Listing Status
-                                </label>
-
-                                <div class="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-
-                                    @if($listing->status === 'active')
-
-                                        <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-
-                                        <span class="text-xs font-semibold text-emerald-700">
-                                            Active
-                                        </span>
-
-                                    @else
-
-                                        <span class="h-2 w-2 rounded-full bg-slate-400"></span>
-
-                                        <span class="text-xs font-semibold text-slate-600">
-                                            {{ ucfirst($listing->status) }}
-                                        </span>
-
-                                    @endif
-
-                                </div>
-
-                            </div>
 
                         </div>
 
                     </div>
 
+                </div>
+
+
+                <!-- ================================================= -->
+                <!-- LISTING AVAILABILITY -->
+                <!-- ================================================= -->
+
+                <div class="mb-6 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+                    <div class="border-b border-slate-100 px-6 py-5">
+                        <h3 class="text-sm font-bold text-slate-900">Listing Availability</h3>
+                        <p class="mt-1 text-xs text-slate-400">Let students know whether this room is still available.</p>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                            <div class="min-w-0 flex-1">
+                                <label for="listing-availability" class="block text-xs font-bold text-slate-700">Availability</label>
+                                <select id="listing-availability" name="availability" class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-semibold text-slate-600 focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20">
+                                    <option value="available" {{ $listing->listing_availability === 'available' ? 'selected' : '' }}>Available</option>
+                                    <option value="rented" {{ $listing->listing_availability === 'rented' ? 'selected' : '' }}>Rented</option>
+                                    <option value="unavailable" {{ $listing->listing_availability === 'unavailable' ? 'selected' : '' }}>Unavailable</option>
+                                </select>
+                            </div>
+                            <p class="pb-2 text-[10px] font-medium text-slate-400">Saved with your changes below.</p>
+                        </div>
+                    </div>
                 </div>
 
 
@@ -413,11 +412,11 @@
                              * Main photo
                              */
 
-                            if ($listing->photo) {
+                            if ($listing->listing_photo) {
 
                                 $allPhotos[] = [
                                     'id' => 'main',
-                                    'path' => $listing->photo,
+                                    'path' => $listing->listing_photo,
                                     'type' => 'main'
                                 ];
 
@@ -438,7 +437,7 @@
                                     if ($additionalPhoto->photo_path) {
 
                                         $allPhotos[] = [
-                                            'id' => $additionalPhoto->id,
+                                            'id' => $additionalPhoto->getKey(),
                                             'path' => $additionalPhoto->photo_path,
                                             'type' => 'additional'
                                         ];
@@ -485,11 +484,11 @@
 
                             @if(count($allPhotos) > 0)
 
-                                <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                                <div id="currentPhotosGrid" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
 
                                     @foreach($allPhotos as $index => $photo)
 
-                                        <div class="group relative overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                                        <div class="photo-card group relative overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
 
 
                                             <!-- PHOTO -->
@@ -501,6 +500,9 @@
                                             >
 
                                                 <img
+                                                    @if($photo['type'] === 'main')
+                                                        id="currentMainPhoto"
+                                                    @endif
                                                     src="{{ asset('storage/' . $photo['path']) }}"
                                                     alt="Listing photo"
                                                     class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
@@ -541,16 +543,17 @@
 
                                             @if($photo['type'] === 'additional')
 
-                                                <label class="absolute bottom-2 left-2 flex cursor-pointer items-center gap-1.5 rounded-lg bg-white/95 px-2.5 py-1.5 text-[10px] font-semibold text-red-600 shadow backdrop-blur-sm">
+                                                <label class="absolute right-2 top-2 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white/95 text-red-600 shadow backdrop-blur-sm transition hover:bg-red-50" title="Remove photo">
 
                                                     <input
                                                         type="checkbox"
                                                         name="delete_photos[]"
                                                         value="{{ $photo['id'] }}"
-                                                        class="h-3.5 w-3.5 rounded border-slate-300 text-red-600 focus:ring-red-500"
+                                                        class="sr-only"
+                                                        onchange="removePhotoCard(this)"
                                                     >
 
-                                                    Delete
+                                                    <i class="fa-solid fa-xmark text-sm"></i>
 
                                                 </label>
 
@@ -727,6 +730,8 @@
 
                                 </div>
 
+                                <div id="selectedPhotosPreview" class="mt-4 hidden grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"></div>
+
                             </div>
 
                         </div>
@@ -747,6 +752,7 @@
 
                     <a
                         href="{{ url()->previous() }}"
+                        onclick="return confirm('Discard your unsaved changes?')"
                         class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-xs font-semibold text-slate-600 shadow-sm transition hover:bg-slate-50"
                     >
 
@@ -1083,6 +1089,19 @@
             input.files.length > 0
         ) {
 
+            const reader = new FileReader();
+
+            reader.onload = function (event) {
+                const currentMainPhoto =
+                    document.getElementById('currentMainPhoto');
+
+                if (currentMainPhoto) {
+                    currentMainPhoto.src = event.target.result;
+                }
+            };
+
+            reader.readAsDataURL(input.files[0]);
+
             nameBox.textContent =
                 'Selected: ' +
                 input.files[0].name;
@@ -1095,6 +1114,16 @@
 
         }
 
+    }
+
+    function removePhotoCard(input) {
+        if (!input.checked) return;
+
+        const photoCard = input.closest('.photo-card');
+
+        if (photoCard) {
+            photoCard.classList.add('hidden');
+        }
     }
 
 
@@ -1110,24 +1139,94 @@
         const text =
             document.getElementById('selectedPhotosText');
 
+        const preview =
+            document.getElementById('selectedPhotosPreview');
+
+        const currentPhotosGrid =
+            document.getElementById('currentPhotosGrid');
+
 
         if (
             input.files &&
             input.files.length > 0
         ) {
 
+            document.querySelectorAll('.new-photo-card').forEach(function (photoCard) {
+                photoCard.remove();
+            });
+
             text.textContent =
                 input.files.length +
                 ' photo(s) selected';
 
             box.classList.remove('hidden');
+            preview.classList.add('hidden');
+
+            Array.from(input.files).forEach(function (file, index) {
+                const reader = new FileReader();
+
+                reader.onload = function (event) {
+                    const photoBox = document.createElement('div');
+                    photoBox.className = 'new-photo-card group relative overflow-hidden rounded-xl border border-emerald-200 bg-slate-100';
+
+                    const image = document.createElement('img');
+                    image.src = event.target.result;
+                    image.alt = file.name;
+                    image.className = 'h-44 w-full object-cover transition duration-300 group-hover:scale-105';
+
+                    const badge = document.createElement('span');
+                    badge.className = 'absolute left-2 top-2 rounded-full bg-emerald-600 px-2.5 py-1 text-[9px] font-bold text-white shadow';
+                    badge.innerHTML = '<i class="fa-solid fa-plus mr-1"></i>New Photo';
+
+                    const removeButton = document.createElement('button');
+                    removeButton.type = 'button';
+                    removeButton.className = 'absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-red-600 shadow backdrop-blur-sm transition hover:bg-red-50';
+                    removeButton.title = 'Remove selected photo';
+                    removeButton.innerHTML = '<i class="fa-solid fa-xmark text-sm"></i>';
+                    removeButton.onclick = function () {
+                        removeSelectedNewPhoto(index);
+                    };
+
+                    photoBox.appendChild(image);
+                    photoBox.appendChild(badge);
+                    photoBox.appendChild(removeButton);
+
+                    if (currentPhotosGrid) {
+                        currentPhotosGrid.appendChild(photoBox);
+                    } else {
+                        preview.appendChild(photoBox);
+                        preview.classList.remove('hidden');
+                    }
+                };
+
+                reader.readAsDataURL(file);
+            });
 
         } else {
 
             box.classList.add('hidden');
+            document.querySelectorAll('.new-photo-card').forEach(function (photoCard) {
+                photoCard.remove();
+            });
+            preview.innerHTML = '';
 
         }
 
+    }
+
+    function removeSelectedNewPhoto(index) {
+        const input = document.getElementById('photos');
+        const files = Array.from(input.files);
+        const dataTransfer = new DataTransfer();
+
+        files.forEach(function (file, fileIndex) {
+            if (fileIndex !== index) {
+                dataTransfer.items.add(file);
+            }
+        });
+
+        input.files = dataTransfer.files;
+        showSelectedPhotos(input);
     }
 
 </script>
