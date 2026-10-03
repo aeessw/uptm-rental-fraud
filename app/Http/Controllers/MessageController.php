@@ -25,6 +25,12 @@ class MessageController extends Controller
         }
 
         $recipient = User::findOrFail($data['receiver_id']);
+        if ($request->user()->fresh()->user_suspended || $recipient->user_suspended) {
+            $reason = 'This account has been suspended by MPP Admin.';
+            return $request->expectsJson()
+                ? response()->json(['message' => $reason], 403)
+                : back()->with('error', $reason);
+        }
         if ($request->user()->blockedUsers()->whereKey($recipient->getKey())->exists()) {
             return $request->expectsJson()
                 ? response()->json(['message' => 'You blocked this user. Unblock them to continue messaging.'], 422)
@@ -87,7 +93,7 @@ class MessageController extends Controller
             }
         }
 
-        $all = Message::with('listing')->where('sender_id', $id)->orWhere('receiver_id', $id)
+        $all = Message::with('listing')->visibleTo($id)
             ->orderBy('message_id')->get();
         $threads = $all->groupBy(fn ($message) => (int) $message->sender_id === (int) $id
             ? $message->receiver_id : $message->sender_id);
@@ -103,6 +109,7 @@ class MessageController extends Controller
         })->reject(fn ($contact) => auth()->user()->blockedUsers()->whereKey($contact->getKey())->exists())
             ->sortByDesc('last_message_id')->values();
         $messages = $user ? $threads->get($user->getKey(), collect()) : collect();
+        $isSuspended = $user && ($user->user_suspended || auth()->user()->fresh()->user_suspended);
         $isBlocked = $user && auth()->user()->blockedUsers()->whereKey($user->getKey())->exists();
         $isBlockedBy = $user && auth()->user()->blockedByUsers()->whereKey($user->getKey())->exists();
         $messages->each(function ($message) {
@@ -116,12 +123,14 @@ class MessageController extends Controller
             $conversationListing = Listing::visibleTo(auth()->user())->find(request('listing_id'));
         }
 
-        if ($isBlocked || $isBlockedBy || ($conversationListing
-            && ! Listing::visibleTo(auth()->user())->whereKey($conversationListing->getKey())->exists())) {
+        if ($isBlocked || $isBlockedBy) {
             $conversationListing = null;
         }
 
-        return response()->view('student.messages', compact('users', 'user', 'messages', 'conversationListing', 'isBlocked', 'isBlockedBy'))
+        $canViewListing = $conversationListing && $conversationListing->listing_status === 'active'
+            && !$conversationListing->user?->user_suspended;
+
+        return response()->view('student.messages', compact('users', 'user', 'messages', 'conversationListing', 'isBlocked', 'isBlockedBy', 'isSuspended', 'canViewListing'))
             ->header('Cache-Control', 'no-store');
     }
 
@@ -149,21 +158,19 @@ class MessageController extends Controller
 
     public function deleteConversation(Request $request, $userId)
     {
-        $deleted = Message::where(function ($query) use ($request, $userId) {
-            $query->where(function ($thread) use ($request, $userId) {
-                $thread->where('sender_id', $request->user()->getKey())->where('receiver_id', $userId);
-            })->orWhere(function ($thread) use ($request, $userId) {
-                $thread->where('sender_id', $userId)->where('receiver_id', $request->user()->getKey());
-            });
-        })->delete();
+        $id = $request->user()->getKey();
+        $deleted = Message::where('sender_id', $id)->where('receiver_id', $userId)
+            ->whereNull('sender_deleted_at')->update(['sender_deleted_at' => now()]);
+        $deleted += Message::where('sender_id', $userId)->where('receiver_id', $id)
+            ->whereNull('receiver_deleted_at')->update(['receiver_deleted_at' => now()]);
 
-        if ($deleted) AuditLogger::log($request->user()->getKey(), 'deleted_conversation', 'User ID: '.$userId);
-        return redirect()->route('student.message.inbox')->with('success', 'Conversation deleted.');
+        if ($deleted) AuditLogger::log($id, 'deleted_conversation', 'Deleted for self only | User ID: '.$userId);
+        return redirect()->route('student.message.inbox')->with('success', 'Conversation deleted for you only.');
     }
 
     public function unreadCount(Request $request)
     {
-        $unreadMessageQuery = Message::where('receiver_id', $request->user()->getKey())
+        $unreadMessageQuery = Message::visibleTo($request->user()->getKey())->where('receiver_id', $request->user()->getKey())
             ->whereNull('message_read_at');
         $unreadMessages = (clone $unreadMessageQuery)->count();
         $recentUnreadMessages = $unreadMessageQuery->with('sender:user_id,user_name')
@@ -194,7 +201,7 @@ class MessageController extends Controller
     public function markRead(Request $request, $userId)
     {
         $data = $request->validate(['through_id' => 'required|integer|min:1']);
-        $read = Message::where('receiver_id', $request->user()->getKey())
+        $read = Message::visibleTo($request->user()->getKey())->where('receiver_id', $request->user()->getKey())
             ->where('sender_id', $userId)->where('message_id', '<=', $data['through_id'])
             ->whereNull('message_read_at')->update(['message_read_at' => now()]);
         if ($read) AuditLogger::log($request->user()->getKey(), 'read_messages', 'User ID: '.$userId);
@@ -203,7 +210,7 @@ class MessageController extends Controller
 
     public function markAllRead(Request $request)
     {
-        $read = Message::where('receiver_id', $request->user()->getKey())
+        $read = Message::visibleTo($request->user()->getKey())->where('receiver_id', $request->user()->getKey())
             ->whereNull('message_read_at')
             ->update(['message_read_at' => now()]);
 

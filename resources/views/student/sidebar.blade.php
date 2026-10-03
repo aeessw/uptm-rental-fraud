@@ -41,6 +41,7 @@
                 @endforeach
             </div>
         @endforeach
+        <a id="student-notifications-toggle" href="{{ route('student.notifications') }}" class="student-nav-link {{ request()->routeIs('student.notifications') ? 'is-active' : '' }}" title="Notifications" @if(request()->routeIs('student.notifications')) aria-current="page" @endif><i class="fa-regular fa-bell" aria-hidden="true"></i><span class="student-nav-label">Notifications</span><span id="student-notification-count" hidden class="ml-auto rounded-full bg-rose-600 px-2 text-xs text-white"></span></a>
     </nav>
 
     @include('student.account-menu')
@@ -118,3 +119,7 @@
 </script>
 
 @include('student.account-menu-script')
+
+@include('student.notifications-script')
+
+@include('shared.success-popup')

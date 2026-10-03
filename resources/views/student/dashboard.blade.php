@@ -102,13 +102,17 @@
                                                 <span class="line-clamp-1 font-medium">{{ $listing->listing_location }}</span>
                                             </div>
 
-                                            <div class="mt-3 flex items-baseline space-x-1">
+                                            <div class="mt-3 flex flex-wrap items-baseline gap-x-1 gap-y-1">
                                                 <span class="text-[#4F46E5] font-extrabold text-base">RM {{ number_format($listing->listing_rent, 2) }}</span>
                                                 <span class="text-slate-400 text-xs font-medium">/mo</span>
                                                 @if($listing->room_type)
                                                     <span class="text-slate-300 text-xs mx-1">•</span>
                                                     <span class="text-xs text-slate-500 font-semibold">{{ $listing->room_type }}</span>
                                                 @endif
+                                                <span class="text-slate-300 text-xs mx-1">&bull;</span>
+                                                <span class="text-xs text-slate-500 font-semibold">
+                                                    @include('student.listings.pax-label')
+                                                </span>
                                             </div>
                                         </div>
                                     </div>

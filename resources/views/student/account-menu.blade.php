@@ -17,12 +17,6 @@
                             </div>
                             <div class="py-2">
                                 <a href="{{ route('student.profile') }}" class="account-menu-item"><i class="fa-regular fa-user" aria-hidden="true"></i> Account settings</a>
-                                <button type="button" id="dashboard-notifications-toggle" aria-expanded="false" aria-controls="dashboard-notifications-panel" class="account-menu-item"><i class="fa-regular fa-bell" aria-hidden="true"></i> Notifications <span id="dashboard-notification-count" hidden class="hidden ml-auto rounded-full bg-[#D72035] px-2 text-xs text-white"></span></button>
-                            </div>
-                            <div id="dashboard-notifications-panel" hidden class="mx-2 mb-3 rounded-xl border border-slate-200 p-3">
-                                <div class="flex items-center justify-between gap-2"><span class="text-xs font-semibold">Notifications</span><button type="button" id="mark-all-notifications-read" class="text-xs text-indigo-600">Mark all as read</button></div>
-                                <p id="student-notification-error" role="status" class="mt-2 text-xs text-rose-600"></p>
-                                <div id="dashboard-notifications-list" class="mt-2 space-y-2" style="max-height: 180px; overflow-y: auto;"></div>
                             </div>
                             <div class="account-appearance" role="group" aria-label="Theme">
                                 <p class="mb-3 text-xs font-semibold text-slate-500">Appearance</p>

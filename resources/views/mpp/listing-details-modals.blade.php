@@ -3,6 +3,7 @@
     <div class="listing-review-body overflow-y-auto p-5">
     <div class="flex items-start justify-between gap-4">
         <div><p class="text-xs text-slate-500">{{ ($investigationMode ?? false) ? 'Report Details for Listing' : 'Listing Details' }} #{{ $listing->getKey() }}</p><h2 id="listing-heading-{{ $listing->getKey() }}" class="mt-1 text-xl font-bold">{{ $listing->listing_title }}</h2><div class="mt-2 flex flex-wrap gap-2 text-xs">
+@include('mpp.review-status', ['listing' => $listing])
 <span class="rounded-full px-2 py-1 {{ $listing->listing_status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-100 text-rose-700' }}">{{ ucfirst($listing->listing_status) }}</span>
 @unless($investigationMode ?? false)
 <span class="rounded-full px-2 py-1 {{ $listing->listing_availability === 'available' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700' }}">{{ ucfirst($listing->listing_availability ?? 'unavailable') }}</span>
@@ -47,16 +48,23 @@
                 <button type="button" class="rounded-lg border border-rose-600 px-4 py-2 text-sm font-semibold text-rose-700" onclick="document.getElementById('listing-details-{{ $listing->getKey() }}').close();document.getElementById('suspend-owner-{{ $listing->getKey() }}').showModal()">Suspend Account</button>
             @endif
         @endif
+        @if($listing->review_status !== 'approved')
+            <form method="POST" action="{{ route('mpp.listings.approve', $listing->getKey()) }}">@csrf<button class="rounded-lg bg-emerald-600 px-4 py-2 text-sm text-white">Approve Listing</button></form>
+        @endif
+        @if($listing->review_status !== 'rejected')
+            <button type="button" class="rounded-lg border border-rose-600 px-4 py-2 text-sm text-rose-700" onclick="document.getElementById('listing-details-{{ $listing->getKey() }}').close();document.getElementById('hide-listing-{{ $listing->getKey() }}').showModal()">Reject Listing</button>
+        @endif
         @if(in_array($listing->listing_status, ['active', 'hidden']))
-            @if($listing->listing_status === 'hidden')
+            @if($listing->listing_status === 'hidden' && $listing->review_status === 'approved')
             <form method="POST" action="{{ route('mpp.listings.restore', $listing->getKey()) }}" onsubmit="return confirm('Restore this listing after review? Existing reports will remain recorded.')">@csrf<button class="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white">Restore Listing</button></form>
-            @else
+            @endif
+            @if($listing->listing_status === 'active')
             <button type="button" class="rounded-lg bg-rose-600 px-4 py-2 text-sm text-white" onclick="document.getElementById('listing-details-{{ $listing->getKey() }}').close();document.getElementById('hide-listing-{{ $listing->getKey() }}').showModal()">Hide Listing</button>
             @endif
         @endif
     </div>
 </dialog>
-<dialog id="hide-listing-{{ $listing->getKey() }}" class="m-auto w-full max-w-lg rounded-2xl bg-white p-6 text-slate-800 backdrop:bg-slate-900/50" aria-labelledby="hide-title-{{ $listing->getKey() }}"><h2 id="hide-title-{{ $listing->getKey() }}" class="text-lg font-semibold">Hide this listing?</h2><p class="my-3">{{ $listing->listing_title }}</p><form method="POST" action="{{ route('mpp.listings.remove', $listing->getKey()) }}">@csrf<label for="hide-reason-{{ $listing->getKey() }}" class="block text-sm">Moderation reason *</label><select id="hide-reason-{{ $listing->getKey() }}" name="reason" required onchange="this.form.elements.note.required = this.value === 'Other'" class="my-2 w-full rounded-lg border p-2"><option value="">Select reason</option>@foreach(['Fraud / Scam','Misleading information','Duplicate listing','Inappropriate Content','Other'] as $reason)<option>{{ $reason }}</option>@endforeach</select><label for="hide-note-{{ $listing->getKey() }}" class="block text-sm">Note (required for Other)</label><textarea id="hide-note-{{ $listing->getKey() }}" name="note" maxlength="100" class="my-2 w-full rounded-lg border p-2"></textarea><div class="mt-3 flex justify-end gap-2"><button type="button" onclick="this.closest('dialog').close()" class="rounded-lg px-3 py-2">Cancel</button><button class="rounded-lg bg-rose-600 px-3 py-2 text-white">Hide Listing</button></div></form></dialog>
+<dialog id="hide-listing-{{ $listing->getKey() }}" class="m-auto w-full max-w-lg rounded-2xl bg-white p-6 text-slate-800 backdrop:bg-slate-900/50" aria-labelledby="hide-title-{{ $listing->getKey() }}"><h2 id="hide-title-{{ $listing->getKey() }}" class="text-lg font-semibold">Review this listing</h2><p class="my-3">{{ $listing->listing_title }}</p><form method="POST" action="{{ route('mpp.listings.remove', $listing->getKey()) }}">@csrf<label for="hide-reason-{{ $listing->getKey() }}" class="block text-sm">Moderation reason *</label><select id="hide-reason-{{ $listing->getKey() }}" name="reason" required onchange="this.form.elements.note.required = this.value === 'Other'" class="my-2 w-full rounded-lg border p-2"><option value="">Select reason</option>@foreach(['Fraud / Scam','Misleading information','Duplicate listing','Inappropriate Content','Other'] as $reason)<option>{{ $reason }}</option>@endforeach</select><label for="hide-note-{{ $listing->getKey() }}" class="block text-sm">Note (required for Other)</label><textarea id="hide-note-{{ $listing->getKey() }}" name="note" maxlength="100" class="my-2 w-full rounded-lg border p-2"></textarea><div class="mt-3 flex justify-end gap-2"><button type="button" onclick="this.closest('dialog').close()" class="rounded-lg px-3 py-2">Cancel</button><button class="rounded-lg bg-rose-600 px-3 py-2 text-white">Hide Listing</button><button formaction="{{ route('mpp.listings.reject', $listing->getKey()) }}" class="rounded-lg bg-rose-700 px-3 py-2 text-white">Reject Listing</button></div></form></dialog>
 @if(($investigationMode ?? false) && $listing->user?->user_role === 'student' && !$listing->user->user_suspended)
 <dialog id="suspend-owner-{{ $listing->getKey() }}" aria-labelledby="owner-suspend-title-{{ $listing->getKey() }}" class="m-auto w-full max-w-lg rounded-2xl bg-white p-6 text-slate-800 shadow-xl backdrop:bg-slate-900/50" style="max-height:85dvh;overflow-y:auto">
     <h2 id="owner-suspend-title-{{ $listing->getKey() }}" class="text-lg font-bold">Suspend Account</h2><p class="mb-5 mt-2 break-words text-sm">You are about to suspend <strong>{{ $listing->user->user_name }}</strong>.</p>
@@ -64,7 +72,7 @@
         <label class="block text-sm font-semibold" for="owner-reason-{{ $listing->getKey() }}">Reason *</label>
         <select required id="owner-reason-{{ $listing->getKey() }}" name="reason" class="mt-2 w-full rounded-lg border border-slate-200 p-3" onchange="this.form.elements.note.required = this.value === 'Other'"><option value="">Select a reason</option>@foreach(['Repeated suspicious listings', 'Misleading information', 'Fraud-related activity', 'Violation of platform rules', 'Other'] as $reason)<option value="{{ $reason }}">{{ $reason }}</option>@endforeach</select>
         <label for="owner-note-{{ $listing->getKey() }}" class="mt-4 block text-sm font-semibold">Additional note</label><p class="text-xs text-slate-500">Required for Other. Maximum 100 characters.</p><textarea id="owner-note-{{ $listing->getKey() }}" name="note" maxlength="100" rows="3" class="mt-2 w-full rounded-lg border border-slate-200 p-3"></textarea>
-        <label class="my-4 flex items-start gap-2 text-sm"><input type="checkbox" name="hide_listings" value="1" class="mt-1">Hide all active listings from this student</label>
+        <p class="my-4 text-sm text-slate-600">This student?s listings will be hidden while suspended. Listings hidden by this suspension will return when the account is unsuspended.</p>
         <div class="flex justify-end gap-3"><button type="button" onclick="this.closest('dialog').close();document.getElementById('listing-details-{{ $listing->getKey() }}').showModal()" class="rounded-lg px-4 py-2">Cancel</button><button type="submit" class="rounded-lg bg-rose-600 px-4 py-2 text-white">Suspend Account</button></div>
     </form>
 </dialog>

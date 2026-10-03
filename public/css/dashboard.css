@@ -609,11 +609,11 @@ body main.mpp-listings-page :is(input, select) { padding-top: 8px; padding-botto
 body main.mpp-listings-page #listingsTable { width: 100%; min-width: 1000px; table-layout: fixed; }
 body main.mpp-listings-page #listingsTable th { padding: 16px 12px; font-size: 12px; line-height: 1.5; letter-spacing: 0.025em; }
 body main.mpp-listings-page #listingsTable td { padding: 22px 12px; vertical-align: middle; font-size: 14px; line-height: 1.5; }
-body main.mpp-listings-page #listingsTable th:nth-child(1) { width: 29%; }
-body main.mpp-listings-page #listingsTable th:nth-child(2) { width: 25%; }
-body main.mpp-listings-page #listingsTable th:nth-child(3) { width: 10%; }
+body main.mpp-listings-page #listingsTable th:nth-child(1) { width: 26%; }
+body main.mpp-listings-page #listingsTable th:nth-child(2) { width: 22%; }
+body main.mpp-listings-page #listingsTable th:nth-child(3) { width: 12%; }
 body main.mpp-listings-page #listingsTable th:nth-child(4) { width: 9%; }
-body main.mpp-listings-page #listingsTable th:nth-child(5) { width: 9%; }
+body main.mpp-listings-page #listingsTable th:nth-child(5) { width: 13%; }
 body main.mpp-listings-page #listingsTable th:nth-child(6) { width: 9%; }
 body main.mpp-listings-page #listingsTable th:nth-child(7) { width: 9%; text-align: center; }
 body main.mpp-listings-page #listingsTable :is(.listing-cell-title, .listing-cell-owner) { font-size: 14px; line-height: 1.5; }
@@ -715,3 +715,46 @@ body[data-theme="dark"] #listing-photo-preview { background: #020617 !important;
 body[data-theme="dark"] .student-action-view:hover { background: #37365e; color: #e0e7ff; }
 body[data-theme="dark"] :is(#dashboard-account-panel, #mpp-account-panel) .account-signout { border-color: #34445c !important; }
 body[data-theme="dark"] :is(#dashboard-account-panel, #mpp-account-panel) .account-menu-item:focus-visible { background: #29384e; }
+
+/* Notifications use the same compact type scale as the MPP moderation pages. */
+body main:is(.mpp-notifications-page, .student-notifications-page) { font-size: 14px; line-height: 1.5; }
+body main:is(.mpp-notifications-page, .student-notifications-page) h2 { font-size: 16px; line-height: 1.5; font-weight: 600; letter-spacing: 0; }
+body main:is(.mpp-notifications-page, .student-notifications-page) h3 { font-size: 14px; line-height: 1.5; font-weight: 600; letter-spacing: 0; }
+body main:is(.mpp-notifications-page, .student-notifications-page) :is(a, button) { font-size: 13px; line-height: 1.5; font-weight: 600; }
+body main:is(.mpp-notifications-page, .student-notifications-page) time { font-size: 12px; line-height: 1.5; }
+
+/* Smooth full-page navigation throughout the student and MPP workspaces. */
+@view-transition { navigation: auto; }
+:root { view-transition-name: none; }
+#student-sidebar, #mpp-sidebar { view-transition-name: workspace-sidebar; }
+body main { view-transition-name: workspace-content; }
+
+::view-transition-group(workspace-sidebar),
+::view-transition-group(workspace-content) { animation-duration: 180ms; animation-timing-function: ease-out; }
+::view-transition-old(workspace-sidebar),
+::view-transition-new(workspace-sidebar) { animation: none; mix-blend-mode: normal; }
+::view-transition-old(workspace-content) { animation: workspace-fade-out 120ms ease-out both; }
+::view-transition-new(workspace-content) { animation: workspace-fade-in 180ms ease-out both; }
+@keyframes workspace-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes workspace-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* Browsers without view transitions still get a gentle page entrance. */
+@supports not (view-transition-name: workspace-content) {
+    body main { animation: workspace-fade-in 180ms ease-out; }
+}
+@media (prefers-reduced-motion: reduce) {
+    @view-transition { navigation: none; }
+    body main { animation: none; }
+    #student-sidebar .student-nav-link,
+    #mpp-sidebar .mpp-nav-link { transition: none; }
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) { animation: none; }
+}
+
+/* Student notifications use the compact workspace heading scale. */
+body main.student-notifications-page h1 { font-size: 18px; line-height: 1.5; font-weight: 600; letter-spacing: 0; }
+body main.student-notifications-page h3 { overflow-wrap: anywhere; }
+body main.student-notifications-page button { white-space: nowrap; }
+/* Keep notification removal controls hidden until selection mode is opened. */
+:is(.student-notifications-page, .mpp-notifications-page) [hidden] { display: none !important; }

@@ -18,7 +18,7 @@ class BlockedListingVisibilityTest extends TestCase
         foreach ([$a, $b] as $owner) {
             $rooms[$owner->getKey()] = Listing::create(['user_id' => $owner->getKey(), 'listing_title' => 'Private room '.$owner->getKey(),
                 'listing_description' => 'Room', 'listing_location' => 'Cheras', 'listing_rent' => 450, 'room_type' => 'Single',
-                'listing_status' => 'active', 'listing_availability' => 'available']);
+                'listing_status' => 'active', 'review_status' => 'approved', 'listing_availability' => 'available']);
         }
         $a->savedListings()->attach($rooms[$b->getKey()]);
         $b->savedListings()->attach($rooms[$a->getKey()]);

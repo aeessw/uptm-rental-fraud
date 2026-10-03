@@ -11,7 +11,7 @@ class MppStudentInvestigationTest extends TestCase
         $mpp = User::factory()->create(['user_role' => 'mpp']);
         $student = User::factory()->create(['user_role' => 'student']);
         $other = User::factory()->create(['user_role' => 'student']);
-        $room = Listing::create(['user_id' => $student->getKey(), 'listing_title' => 'Student room', 'listing_description' => 'Room', 'listing_location' => 'Cheras', 'listing_rent' => 450, 'room_type' => 'Single', 'listing_status' => 'active']);
+        $room = Listing::create(['user_id' => $student->getKey(), 'listing_title' => 'Student room', 'listing_description' => 'Room', 'listing_location' => 'Cheras', 'listing_rent' => 450, 'room_type' => 'Single', 'listing_status' => 'active', 'review_status' => 'approved']);
         Report::create(['user_id' => $other->getKey(), 'listing_id' => $room->getKey(), 'report_reason' => 'Suspicious']);
         $this->actingAs($mpp)->get(route('mpp.students'))->assertOk()->assertSee('Reports Received')->assertSee('student-details-'.$student->getKey())->assertViewHas('users', fn ($users) => $users->firstWhere('user_id', $student->getKey())->received_reports_count === 1 && $users->firstWhere('user_id', $student->getKey())->listings_count === 1);
         $this->get(route('mpp.listings', ['user_id' => $other->getKey()]))->assertOk()->assertViewHas('listings', fn ($items) => $items->isEmpty());
@@ -35,7 +35,7 @@ class MppStudentInvestigationTest extends TestCase
         $this->get(route('mpp.audit.logs', ['user_id' => $other->getKey()]))->assertOk()->assertViewHas('auditLogs', fn ($logs) => $logs->isEmpty());
         $this->post(route('mpp.users.unsuspend', $student))->assertRedirect();
         $this->assertFalse($student->fresh()->user_suspended);
-        $this->assertSame('hidden', $room->fresh()->listing_status);
+        $this->assertSame('active', $room->fresh()->listing_status);
         $this->post(route('mpp.users.suspend', $mpp), ['reason' => 'Misleading information'])->assertNotFound();
         $this->actingAs($other)->post(route('mpp.users.suspend', $student), ['reason' => 'Misleading information'])->assertRedirect('/');
     }

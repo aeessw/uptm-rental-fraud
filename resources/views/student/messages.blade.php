@@ -129,6 +129,10 @@
                                                 </span>
                                             </div>
 
+                                            <p class="mb-1 truncate text-[10px] text-slate-400" title="{{ $chatUser->user_email }}">{{ $chatUser->user_email }}</p>
+                                            @if($chatUser->user_suspended)
+                                                <p class="mb-1 text-[11px] font-semibold text-rose-700">Account Suspended</p>
+                                            @endif
                                             <div class="flex items-center justify-between space-x-2">
                                                 <p class="truncate text-[11px] {{ ($chatUser->unread_count ?? 0) > 0 ? 'font-semibold text-slate-900' : 'text-slate-500' }}">
                                                     {{ $chatUser->last_message }}
@@ -162,13 +166,13 @@
                         <div class="flex items-start space-x-2.5">
                             <i class="fa-solid fa-shield-halved mt-0.5 text-[11px] text-emerald-500"></i>
                             <p class="text-[10px] font-medium leading-relaxed text-slate-500">
-                                Keep all discussions within this channel to ensure student identity verification and prevent fraud.
+                                Keep conversations on the platform to protect privacy and help prevent fraud.
                             </p>
                         </div>
                     </div>
                 </div>
 
-                <div id="conversation-panel" data-read-url="{{ $user ? route('student.messages.read', $user->getKey()) : '' }}" class="col-span-12 md:col-span-7 lg:col-span-8 bg-white rounded-2xl border border-slate-200/60 shadow-xs flex flex-col overflow-hidden">
+                <div id="conversation-panel" data-access-state="{{ (int) $isSuspended }}-{{ (int) $isBlocked }}-{{ (int) $isBlockedBy }}-{{ (int) $canViewListing }}-{{ (int) ($user?->user_suspended ?? false) }}" data-read-url="{{ $user ? route('student.messages.read', $user->getKey()) : '' }}" class="col-span-12 md:col-span-7 lg:col-span-8 bg-white rounded-2xl border border-slate-200/60 shadow-xs flex flex-col overflow-hidden">
 
                     <div class="p-5 border-b border-slate-100 flex items-center justify-between gap-3.5 bg-white shrink-0">
                         @if($user)
@@ -189,24 +193,39 @@
                             <div class="w-10 h-10 rounded-full border font-bold flex items-center justify-center text-xs shrink-0 ring-2 {{ $selectedAvatarClass }}">
                                 {{ strtoupper(substr($user->user_name, 0, 1)) }}
                             </div>
-                            <div>
-                                <h4 class="text-sm font-bold text-slate-900">{{ $user->user_name }}</h4>
-                                <p class="text-xs text-slate-500">UPTM student account</p>
+                            <div class="min-w-0">
+                                <h4 class="truncate text-sm font-bold text-slate-900">{{ $user->user_name }}</h4>
+                                @if($user->user_suspended)
+                                    <span class="mt-1 inline-flex rounded-full bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700">Account Suspended</span>
+
+                                @endif
                             </div>
                             </div>
-                            <form class="ml-auto" method="POST" action="{{ $isBlocked ? route('student.users.unblock', $user) : route('student.users.block', $user) }}">
-                                @csrf
-                                <button class="rounded-lg px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50">{{ $isBlocked ? 'Unblock' : 'Block user' }}</button>
-                            </form>
-                            @if($conversationListing)
-                                <button type="button" onclick="document.getElementById('chat-report-modal').classList.remove('hidden')" class="inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs font-bold text-slate-500 transition hover:bg-rose-50 hover:text-rose-600" aria-label="Report user or listing" title="Report user or listing">
-                                    <i class="fa-solid fa-flag"></i>
-                                    <span>Report</span>
-                                </button>
-                            @endif
+                            <div class="ml-auto flex shrink-0 items-center gap-1">
                             <button id="message-search-toggle" type="button" aria-label="Search conversation" title="Search conversation" aria-expanded="false" aria-controls="message-search-panel" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50">
                                 <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
                             </button>
+                                <details id="conversation-actions" class="relative">
+                                    <summary aria-label="Conversation actions" title="Conversation actions" class="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
+                                        <i class="fa-solid fa-ellipsis-vertical" aria-hidden="true"></i>
+                                    </summary>
+                                    <div class="absolute right-0 top-full z-30 mt-1 w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
+                                        @if($conversationListing)
+                                            <button type="button" aria-label="Report user or listing" onclick="this.closest('details').open = false; document.getElementById('chat-report-modal').classList.remove('hidden')" class="w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-slate-600 hover:bg-slate-50">Report user</button>
+                                        @endif
+                                        @unless($user->user_suspended)
+                                            <form method="POST" action="{{ $isBlocked ? route('student.users.unblock', $user) : route('student.users.block', $user) }}">
+                                                @csrf
+                                                <button type="submit" class="w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-slate-600 hover:bg-slate-50">{{ $isBlocked ? 'Unblock user' : 'Block user' }}</button>
+                                            </form>
+                                        @endunless
+                                        <form method="POST" action="{{ route('student.messages.delete', $user->getKey()) }}" onsubmit="return confirm('Delete conversation?\nThis conversation will be removed from your inbox.');">
+                                            @csrf
+                                            <button type="submit" class="w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50">Delete conversation</button>
+                                        </form>
+                                    </div>
+                                </details>
+                            </div>
                         @else
                             <div class="flex items-center gap-4">
                                 <div class="w-10 h-10 rounded-full bg-slate-50 text-slate-400 font-bold flex items-center justify-center text-xs border border-slate-200 shrink-0">
@@ -221,25 +240,25 @@
                     </div>
 
                     @if($user && $conversationListing)
-                        <div class="border-b border-slate-100 bg-white px-5 py-3 shrink-0">
-                            <a href="{{ route('student.listings.show', $conversationListing->getKey()) }}" class="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm transition hover:border-brand-200 hover:bg-brand-50/30">
+                        <div class="shrink-0 border-b border-slate-100 bg-white px-5 py-3">
+                            <a @if($canViewListing) href="{{ route('student.listings.show', $conversationListing->getKey()) }}" @else aria-disabled="true" @endif class="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm {{ $canViewListing ? 'transition hover:border-brand-200 hover:bg-brand-50/30' : '' }}">
                                 <div class="h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-slate-100">
                                     @if($conversationListing->listing_photo)
                                         <img src="{{ asset('storage/' . $conversationListing->listing_photo) }}" alt="{{ $conversationListing->listing_title }}" class="h-full w-full object-cover">
                                     @else
-                                        <div class="flex h-full items-center justify-center text-slate-300"><i class="fa-solid fa-house"></i></div>
+                                        <div class="flex h-full items-center justify-center text-slate-300"><i class="fa-solid fa-house" aria-hidden="true"></i></div>
                                     @endif
                                 </div>
                                 <div class="min-w-0 flex-1">
-                                    <h3 class="mt-0.5 truncate text-xs font-bold text-slate-900 group-hover:text-brand-600">{{ $conversationListing->listing_title }}</h3>
+                                    <h3 class="truncate text-xs font-bold text-slate-900">{{ $conversationListing->listing_title }}</h3>
                                     <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] font-medium text-slate-500">
-                                        <span><i class="fa-solid fa-location-dot mr-1 text-slate-400"></i>{{ $conversationListing->listing_location }}</span>
-                                        <span><i class="fa-solid fa-door-open mr-1 text-slate-400"></i>{{ $conversationListing->room_type }}</span>
+                                        <span><i class="fa-solid fa-location-dot mr-1 text-slate-400" aria-hidden="true"></i>{{ $conversationListing->listing_location }}</span>
+                                        <span><i class="fa-solid fa-door-open mr-1 text-slate-400" aria-hidden="true"></i>{{ $conversationListing->room_type }}</span>
                                     </div>
                                     <p class="mt-1 text-xs font-extrabold text-brand-600">RM {{ number_format($conversationListing->listing_rent, 2) }} <span class="font-medium text-slate-400">/month</span></p>
                                 </div>
-                                <span class="hidden shrink-0 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[10px] font-bold text-slate-600 sm:inline-flex sm:items-center sm:gap-1 group-hover:border-brand-200 group-hover:text-brand-600">
-                                    View room <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                <span class="shrink-0 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[10px] font-bold text-slate-600">
+                                    @if($canViewListing) View room <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i> @else Room unavailable @endif
                                 </span>
                             </a>
                         </div>
@@ -288,7 +307,7 @@
                                 </div>
                                 <h3 class="text-xs font-bold text-slate-800">No messages yet</h3>
                                 <p class="text-[11px] text-slate-500 mt-1 max-w-sm leading-relaxed">
-                                    Start the conversation by sending a message below.
+                                    {{ $isSuspended ? 'Messaging is unavailable while an account is suspended.' : 'Start the conversation by sending a message below.' }}
                                 </p>
                             </div>
                         @else
@@ -343,12 +362,17 @@
 
                     <div class="p-5 border-t border-slate-100 bg-white shrink-0">
                         @if($user)
-                            @if($isBlocked)
+                            @if($isSuspended)
+                                <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3" role="status">
+                                    <p class="text-xs font-bold text-rose-800">{{ $user->user_suspended ? 'Account Suspended' : 'Your Account Is Suspended' }}</p>
+                                    <p class="mt-1 text-xs leading-relaxed text-rose-700">This account has been suspended by MPP Admin.</p>
+                                </div>
+                            @elseif($isBlocked)
                                 <div class="rounded-xl border border-rose-100 bg-rose-50 px-4 py-3 text-center">
                                     <p class="text-xs font-bold text-rose-700">You blocked this user.</p>
                                     <p class="mt-1 text-[11px] text-rose-600">Unblock them to continue messaging.</p>
                                     <div class="mt-3 flex justify-center gap-2">
-                                        <form action="{{ route('student.messages.delete', $user->getKey()) }}" method="POST">
+                                        <form action="{{ route('student.messages.delete', $user->getKey()) }}" method="POST" onsubmit="return confirm('Delete conversation?\nThis conversation will be removed from your inbox.');">
                                             @csrf
                                             <button type="submit" class="rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-bold text-rose-700 transition hover:bg-rose-100">Delete chat</button>
                                         </form>
@@ -445,14 +469,10 @@
     </div>
 @endif
 
-@if(session('success') === 'Listing reported successfully.')
-    <script>
-        window.alert('Listing reported successfully.');
-    </script>
-@endif
+
 
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener('DOMContentLoaded', function() {
         const chatBox = document.getElementById("chatBox");
         if (chatBox) {
             chatBox.scrollTop = chatBox.scrollHeight;
@@ -531,6 +551,24 @@
             const list = document.getElementById('conversation-list');
             const nextList = doc.getElementById('conversation-list');
             if (!nextBox || !nextList) return;
+            const panel = document.getElementById('conversation-panel');
+            const nextPanel = doc.getElementById('conversation-panel');
+            if (nextPanel && panel.dataset.accessState !== nextPanel.dataset.accessState) {
+                const input = panel.querySelector('input[name="message"]');
+                if (input) drafts.set(activeUrl, input.value);
+                const previousScroll = box.scrollTop;
+                panel.replaceWith(nextPanel);
+                const restoredInput = nextPanel.querySelector('input[name="message"]');
+                if (restoredInput) restoredInput.value = drafts.get(activeUrl) || '';
+                nextPanel.querySelector('#chatBox').scrollTop = previousScroll;
+                list.innerHTML = nextList.innerHTML;
+                document.getElementById('chat-report-modal')?.remove();
+                const modal = doc.getElementById('chat-report-modal');
+                if (modal) document.body.appendChild(modal);
+                window.dispatchEvent(new Event('conversation-list-updated'));
+                window.dispatchEvent(new Event('conversation-switched'));
+                return;
+            }
             const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
             if (list.innerHTML !== nextList.innerHTML) {
                 list.innerHTML = nextList.innerHTML;
@@ -681,6 +719,17 @@
 </script>
 <script>
 (() => {
+    document.addEventListener('click', event => {
+        const actions = document.getElementById('conversation-actions');
+        if (actions && !actions.contains(event.target)) actions.open = false;
+    });
+    document.addEventListener('keydown', event => {
+        const actions = document.getElementById('conversation-actions');
+        if (event.key === 'Escape' && actions?.open) {
+            actions.open = false;
+            actions.querySelector('summary').focus();
+        }
+    });
     let cleanup = () => {};
     function initializeConversationControls() {
     cleanup();

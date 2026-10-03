@@ -16,8 +16,8 @@ class RenamedColumnFlowsTest extends TestCase
     {
         $owner = User::factory()->create(['user_role' => 'student']);
         $viewer = User::factory()->create(['user_role' => 'student']);
-        $room = Listing::create(['user_id' => $owner->getKey(), 'listing_title' => 'Matching room', 'listing_description' => 'Quiet', 'listing_location' => 'Cheras', 'listing_rent' => 450, 'room_type' => 'Single']);
-        Listing::create(['user_id' => $owner->getKey(), 'listing_title' => 'Other room', 'listing_description' => 'Other', 'listing_location' => 'Ampang', 'listing_rent' => 1200, 'room_type' => 'Shared']);
+        $room = Listing::create(['review_status' => 'approved', 'user_id' => $owner->getKey(), 'listing_title' => 'Matching room', 'listing_description' => 'Quiet', 'listing_location' => 'Cheras', 'listing_rent' => 450, 'room_type' => 'Single']);
+        Listing::create(['review_status' => 'approved', 'user_id' => $owner->getKey(), 'listing_title' => 'Other room', 'listing_description' => 'Other', 'listing_location' => 'Ampang', 'listing_rent' => 1200, 'room_type' => 'Shared']);
         $this->actingAs($viewer)->get(route('student.listings', ['search' => 'Matching', 'location' => 'Cheras', 'rent' => 'below500', 'room_type' => 'Single', 'availability' => 'available', 'sort' => 'price_asc']))->assertOk()->assertSee('Matching room')->assertDontSee('Other room');
         $this->get(route('student.listings', ['sort' => 'price_desc']))->assertOk()->assertSeeInOrder(['Other room', 'Matching room']);
         $this->get(route('student.listings.show', $room))->assertOk();

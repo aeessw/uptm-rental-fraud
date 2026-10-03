@@ -6,28 +6,19 @@
     <title>UPTM Rental Fraud Detection</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/welcome.css') }}">
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous">
 </head>
-<body class="welcome-page"
-      style="background-image: url('{{ asset('images/uptm3.jpg') }}');">
-
-    <!-- Subtle Blur Background Overlay matching reference style -->
-    <div class="welcome-overlay"></div>
+<body class="welcome-page">
 
     <!-- Main Content Box (Styled to match UiTM Reference Card: Square corners, sharp layout, navy typography) -->
     <div class="welcome-card">
 
-        <!-- UPTM Logo & System Title Block -->
+        <!-- System Title Block -->
         <div class="welcome-heading">
-            <!-- Centered Logo Above Title -->
-            <img src="{{ asset('images/LOGO_UPTM.png') }}"
-                 alt="UPTM Logo" height="86"
-                 class="welcome-logo">
-
-            <!-- Montserrat Black system title -->
+            <!-- Poppins Bold system title -->
             <h2 class="welcome-title">
                 UPTM Rental Fraud Detection
             </h2>

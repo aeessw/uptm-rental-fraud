@@ -22,7 +22,7 @@
         <label class="block text-sm font-semibold" for="reason-{{ $user->getKey() }}">Reason *</label>
         <select required id="reason-{{ $user->getKey() }}" name="reason" class="mt-2 w-full rounded-lg border border-slate-200 p-3" onchange="this.form.elements.note.required = this.value === 'Other'"><option value="">Select a reason</option>@foreach(['Repeated suspicious listings', 'Misleading information', 'Fraud-related activity', 'Violation of platform rules', 'Other'] as $reason)<option value="{{ $reason }}">{{ $reason }}</option>@endforeach</select>
         <label for="note-{{ $user->getKey() }}" class="mt-4 block text-sm font-semibold">Additional note</label><p class="text-xs text-slate-500">Required for Other. Maximum 100 characters.</p><textarea id="note-{{ $user->getKey() }}" name="note" maxlength="100" rows="3" class="mt-2 w-full rounded-lg border border-slate-200 p-3"></textarea>
-        <label class="my-4 flex items-start gap-2 text-sm"><input type="checkbox" name="hide_listings" value="1" class="mt-1">Hide all active listings from this student</label>
+        <p class="my-4 text-sm text-slate-600">This student?s listings will be hidden while suspended. Listings hidden by this suspension will return when the account is unsuspended.</p>
         <div class="flex justify-end gap-3"><button type="button" onclick="this.closest('dialog').close()" class="rounded-lg px-4 py-2">Cancel</button><button type="submit" class="rounded-lg bg-rose-600 px-4 py-2 text-white">Suspend Student</button></div>
     </form>
 </dialog>

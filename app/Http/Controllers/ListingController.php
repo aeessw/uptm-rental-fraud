@@ -18,7 +18,7 @@ class ListingController extends Controller
 
     public function index(Request $request)
     {
-        $query = Listing::visibleTo(Auth::user())->where('listing_status', 'active')->where('listing_availability', 'available')->with('photos');
+        $query = Listing::visibleTo(Auth::user())->where('listing_status', 'active')->where('review_status', 'approved')->where('listing_availability', 'available')->with('photos');
 
         $request->validate(['pax' => ['nullable', \Illuminate\Validation\Rule::in(['1', '2', '3', '4', '5+'])]]);
         if ($request->filled('pax')) {
@@ -87,7 +87,7 @@ class ListingController extends Controller
         }
 
         $query = Auth::user()->savedListings()->visibleTo(Auth::user())
-            ->where('listings.listing_status', 'active')
+            ->where('listings.listing_status', 'active')->where('listings.review_status', 'approved')
             ->where('listings.listing_availability', 'available')
             ->with('photos');
 
@@ -211,6 +211,10 @@ class ListingController extends Controller
 
     public function create()
     {
+        if (Auth::user()->listings()->count() >= 2) {
+            return redirect()->route('student.profile')->with('success', 'You can only have two posts. You have reached your posting limit.');
+        }
+
         return view('student.create-listings');
     }
 
@@ -225,7 +229,7 @@ class ListingController extends Controller
             'description' => 'required|string',
             'location'    => 'required|string|max:255',
             'rent'        => 'required|numeric|min:0',
-            'room_type'   => 'required|string|max:100',
+            'room_type'   => 'required|string|in:Master,Middle,Single',
             'pax' => 'required|integer|min:1|max:100',
             'available_from' => 'required|date_format:Y-m-d',
             'rental_period' => ['required', \Illuminate\Validation\Rule::in(array_keys(Listing::RENTAL_PERIODS))],
@@ -238,7 +242,16 @@ class ListingController extends Controller
             'photos.*'    => 'image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
         
-        $listing = Listing::create([
+        $listing = \Illuminate\Support\Facades\DB::transaction(function () use ($request) {
+            // Lock the owner so simultaneous submissions cannot exceed the limit.
+            $owner = \App\Models\User::whereKey(Auth::id())->lockForUpdate()->firstOrFail();
+            if ($owner->listings()->count() >= 2) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'listing_limit' => 'You can only have two posts. You have reached your posting limit.',
+                ]);
+            }
+
+            return Listing::create([
             'user_id'      => Auth::id(),
             'listing_title'        => $request->title,
             'listing_description'  => $request->description,
@@ -251,10 +264,12 @@ class ListingController extends Controller
             'preferred_tenant' => $request->input('preferred_tenant') ?? 'any',
             'facilities' => $request->input('facilities') ?? [],
             'listing_photo'        => null,
-            'listing_status'       => 'active',
+            'listing_status'       => 'hidden',
+            'review_status' => 'pending',
             'listing_availability' => 'available',
             'report_count' => 0,
-        ]);
+            ]);
+        });
 
 
         // -----------------------------------------------------
@@ -302,7 +317,7 @@ class ListingController extends Controller
 
         return redirect()
             ->route('student.listings.show', $listing->getKey())
-            ->with('success', 'Listing posted successfully.');
+            ->with('success', 'Post submitted. It will appear in room listings after MPP approval.');
     }
 
 
@@ -344,7 +359,7 @@ class ListingController extends Controller
             'description' => 'required|string',
             'location'    => 'required|string|max:255',
             'rent'        => 'required|numeric|min:0',
-            'room_type'   => 'required|string|max:100',
+            'room_type'   => 'required|string|in:Master,Middle,Single',
             'pax' => 'required|integer|min:1|max:100',
             'available_from' => 'required|date_format:Y-m-d',
             'rental_period' => ['required', \Illuminate\Validation\Rule::in(array_keys(Listing::RENTAL_PERIODS))],
@@ -364,6 +379,10 @@ class ListingController extends Controller
         // -----------------------------------------------------
         // UPDATE BASIC INFORMATION
         // -----------------------------------------------------
+
+        $listing->review_status = 'pending';
+        $listing->listing_status = 'hidden';
+        $listing->hidden_by_suspension = false;
 
         $listing->listing_title       = $request->title;
         $listing->listing_description = $request->description;
@@ -455,7 +474,7 @@ class ListingController extends Controller
 
         return redirect()
             ->route('student.listings.show', $listing->getKey())
-            ->with('success', 'Listing updated successfully.');
+            ->with('success', 'Post updated and hidden until MPP approves it.');
     }
 
 

@@ -32,6 +32,10 @@ Route::post('/logout', [AuthController::class, 'logout'])
 //-- Student Protected Routes --//
 Route::middleware(['auth', 'student'])->group(function () {
 
+    Route::get('/student/notifications', [\App\Http\Controllers\StudentNotificationController::class, 'index'])->name('student.notifications');
+    Route::post('/student/notifications/read', [\App\Http\Controllers\StudentNotificationController::class, 'read'])->name('student.notifications.read');
+    Route::delete('/student/notifications', [\App\Http\Controllers\StudentNotificationController::class, 'destroy'])->name('student.notifications.destroy');
+
     Route::get('/student/profile', function (\Illuminate\Http\Request $request) {
         $listings = Listing::where('user_id', $request->user()->getKey())
             ->latest()
@@ -47,7 +51,7 @@ Route::middleware(['auth', 'student'])->group(function () {
 
     // Student Dashboard
     Route::get('/student/dashboard', function () {
-        $listings = Listing::visibleTo(auth()->user())->where('listing_status', 'active')
+        $listings = Listing::visibleTo(auth()->user())->where('listing_status', 'active')->where('review_status', 'approved')
             ->where('listing_availability', 'available')
             ->latest()
             ->take(3)
@@ -124,6 +128,7 @@ Route::middleware(['auth', 'student'])->group(function () {
 Route::middleware(['auth', 'mpp'])->group(function () {
     Route::get('/mpp/notifications', [\App\Http\Controllers\MppNotificationController::class, 'index'])->name('mpp.notifications');
     Route::post('/mpp/notifications/read', [\App\Http\Controllers\MppNotificationController::class, 'read'])->name('mpp.notifications.read');
+    Route::delete('/mpp/notifications', [\App\Http\Controllers\MppNotificationController::class, 'destroy'])->name('mpp.notifications.destroy');
 
     Route::get('/mpp/dashboard', [MppController::class, 'dashboard'])
         ->name('mpp.dashboard');
@@ -141,6 +146,10 @@ Route::middleware(['auth', 'mpp'])->group(function () {
 
     Route::post('/mpp/listings/{id}/remove', [MppController::class, 'removeListing'])
         ->name('mpp.listings.remove');
+
+    Route::post('/mpp/listings/{id}/reject', [MppController::class, 'rejectListing'])->name('mpp.listings.reject');
+
+    Route::post('/mpp/listings/{id}/approve', [MppController::class, 'approveListing'])->name('mpp.listings.approve');
 
     Route::post('/mpp/listings/{id}/restore', [MppController::class, 'restoreListing'])
         ->name('mpp.listings.restore');

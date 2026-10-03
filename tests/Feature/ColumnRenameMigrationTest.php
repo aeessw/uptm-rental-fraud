@@ -37,7 +37,7 @@ class ColumnRenameMigrationTest extends TestCase
         DB::table('audit_logs')->insert(['id' => 111, 'user_id' => 41, 'action' => 'viewed_listing', 'target' => 'Listing ID: 71', 'hmac' => $signature] + $timestamps);
         DB::table('listing_saves')->insert(['id' => 121, 'user_id' => 42, 'listing_id' => 71] + $timestamps);
         DB::table('user_blocks')->insert(['id' => 131, 'blocker_id' => 42, 'blocked_id' => 41] + $timestamps);
-        DB::table('mpp_notification_reads')->insert(['id' => 141, 'user_id' => 41, 'notification_key' => 'report:101']);
+        DB::table('mpp_notification_reads')->insert(['notification_read_id' => 141, 'user_id' => 41, 'notification_read_key' => 'report:101']);
 
         $columns = (new \ReflectionClass($migration))->getConstant('COLUMNS');
         $before = [];
@@ -68,7 +68,7 @@ class ColumnRenameMigrationTest extends TestCase
         $this->assertSame(41, User::findOrFail(42)->blockedUsers->sole()->getKey());
         $this->assertSame($date, User::findOrFail(42)->savedListings->sole()->pivot->save_created_at->toDateTimeString());
         $this->assertSame([], DB::select('PRAGMA foreign_key_check'));
-        foreach (['sessions', 'jobs', 'job_batches', 'failed_jobs', 'mpp_notification_reads'] as $table) {
+        foreach (['sessions', 'jobs', 'job_batches', 'failed_jobs'] as $table) {
             $this->assertTrue(Schema::hasColumn($table, 'id'));
         }
         $this->assertTrue(Schema::hasColumn('password_reset_tokens', 'email'));

@@ -25,6 +25,17 @@ class Message extends Model
         return ['message_read_at' => 'datetime'];
     }
 
+    public function scopeVisibleTo($query, $userId)
+    {
+        return $query->where(function ($query) use ($userId) {
+            $query->where(function ($sent) use ($userId) {
+                $sent->where('sender_id', $userId)->whereNull('sender_deleted_at');
+            })->orWhere(function ($received) use ($userId) {
+                $received->where('receiver_id', $userId)->whereNull('receiver_deleted_at');
+            });
+        });
+    }
+
     public function sender()
     {
         return $this->belongsTo(User::class, 'sender_id', 'user_id');

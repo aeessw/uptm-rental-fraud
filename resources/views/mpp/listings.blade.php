@@ -264,17 +264,6 @@
 
 
 
-                                <th
-                                    class="px-6 py-4
-                                           text-[10px] font-bold
-                                           uppercase tracking-wider
-                                           text-slate-500"
-                                >
-                                    Rent
-                                </th>
-
-
-
                                 <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">Availability</th>
 
                                 <th
@@ -286,6 +275,8 @@
                                 >
                                     Reports
                                 </th>
+
+                                <th class="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-slate-500">Review Status</th>
 
                                 <th
                                     class="px-6 py-4
@@ -406,27 +397,6 @@
 
 
 
-                                    <!-- RENT -->
-
-                                    <td class="whitespace-nowrap px-6 py-4">
-
-                                        <span
-                                            class="text-xs font-bold
-                                                   text-brand-600"
-                                        >
-
-                                            RM {{ number_format($listing->listing_rent, 2) }}
-
-                                        </span>
-
-                                    </td>
-
-
-
-
-
-
-
                                     <td class="px-6 py-4">
                                         <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $listing->listing_availability === 'available' ? 'bg-emerald-100 text-emerald-700' : ($listing->listing_availability === 'rented' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600') }}">{{ ucfirst($listing->listing_availability ?? 'unavailable') }}</span>
                                     </td>
@@ -437,6 +407,8 @@
                                             <span class="text-xs text-slate-400">0 Reports</span>
                                         @endif
                                     </td>
+
+                                    <td class="px-6 py-4">@include('mpp.review-status', ['listing' => $listing])</td>
 
                                     <!-- STATUS -->
 
@@ -507,7 +479,7 @@
 
 
 
-                                    <!-- Review details before taking moderation action. -->
+                                    <!-- Listing details and moderation actions. -->
                                     <td class="px-6 py-4 text-center">
                                         <div class="listing-row-actions">
                                             <button type="button" onclick="document.getElementById('listing-details-{{ $listing->getKey() }}').showModal()" class="rounded-lg bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100" aria-label="View details for {{ $listing->listing_title }}"><i class="fa-solid fa-eye mr-1" aria-hidden="true"></i>View</button>

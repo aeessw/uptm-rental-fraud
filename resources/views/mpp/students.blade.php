@@ -85,11 +85,7 @@
         @endif
         <!-- SUCCESS MESSAGE -->
 
-        @if(session('success'))
-            <script>
-                window.alert(@json(session('success')));
-            </script>
-        @endif
+        
 
 
 

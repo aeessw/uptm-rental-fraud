@@ -15,7 +15,7 @@ class Listing extends Model
 
     public const FACILITIES = [
         'wifi' => 'WiFi', 'air_conditioning' => 'Air Conditioning',
-        'washing_machine' => 'Washing Machine', 'study_table' => 'Study Table',
+        'washing_machine' => 'Washing Machine', 'fridge' => 'Fridge',
         'wardrobe' => 'Wardrobe', 'private_bathroom' => 'Private Bathroom',
         'parking' => 'Parking', 'kitchen' => 'Kitchen',
     ];
@@ -38,6 +38,8 @@ class Listing extends Model
         'facilities',
         'listing_photo',
         'listing_status',
+        'review_status',
+        'hidden_by_suspension',
         'listing_availability',
         'report_count',
     ];
@@ -45,6 +47,9 @@ class Listing extends Model
     public function scopeVisibleTo($query, User $viewer)
     {
         return $query
+            ->where(fn ($visibility) => $visibility->where(fn ($published) => $published->where('listings.listing_status', 'active')->where('listings.review_status', 'approved'))
+                ->orWhere('listings.user_id', $viewer->getKey()))
+            ->whereHas('user', fn ($owner) => $owner->where('user_suspended', false))
             ->whereNotIn('listings.user_id', \Illuminate\Support\Facades\DB::table('user_blocks')
                 ->select('blocked_id')->where('blocker_id', $viewer->getKey()))
             ->whereNotIn('listings.user_id', \Illuminate\Support\Facades\DB::table('user_blocks')

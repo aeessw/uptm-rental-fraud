@@ -94,6 +94,9 @@
                     </button>
                 </div>
 
+                @if($listing->review_status === 'pending')
+                    <p role="status" class="mb-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">Pending MPP approval. This post is hidden from room listings until approved.</p>
+                @endif
                 @if(session('error'))
                     <div class="mb-5 flex items-center gap-2.5 rounded-xl border border-rose-500/20 bg-rose-500/10 p-4 text-sm font-semibold text-rose-800">
                         <i class="fa-solid fa-circle-exclamation text-rose-600"></i>
@@ -137,7 +140,7 @@
                             <div class="flex flex-wrap items-start justify-between gap-4">
                                 <div>
                                     <h1 id="listing-title" class="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">{{ $listing->listing_title }}</h1>
-                                    @if((string) $listing->user_id === (string) Auth::id() || $listing->listing_availability !== 'available')
+                                    @if(($listing->listing_availability ?? 'available') !== 'available')
                                     <span class="mt-2 inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold {{ $listing->listing_availability === 'available' ? 'bg-emerald-100 text-emerald-700' : ($listing->listing_availability === 'rented' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600') }}">
                                         <span class="mr-1.5 h-1.5 w-1.5 rounded-full {{ $listing->listing_availability === 'available' ? 'bg-emerald-500' : ($listing->listing_availability === 'rented' ? 'bg-rose-500' : 'bg-slate-500') }}"></span>
                                         {{ ucfirst($listing->listing_availability ?? 'available') }}
@@ -150,33 +153,41 @@
                             </div>
                         </section>
 
-                        <nav class="mt-7 flex gap-6 overflow-x-auto border-b border-slate-200" aria-label="Listing sections">
-                            <a href="#description" class="border-b-2 border-brand-600 pb-3 text-sm font-semibold text-slate-900">Room details</a>
-                        </nav>
 
-                        <section class="pt-7" aria-labelledby="rental-details-heading">
-                            <h2 id="rental-details-heading" class="text-base font-bold text-slate-900">Rental Details</h2>
-                            <dl class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3 text-sm">
-                                <div><dt class="text-slate-500">Available From</dt><dd class="mt-1 font-semibold text-slate-800">{{ $listing->available_from?->format('d M Y') ?? 'Not specified' }}</dd></div>
-                                <div><dt class="text-slate-500">Rental Period</dt><dd class="mt-1 font-semibold text-slate-800">{{ \App\Models\Listing::RENTAL_PERIODS[$listing->rental_period] ?? 'Not specified' }}</dd></div>
-                                <div><dt class="text-slate-500">Preferred Tenant</dt><dd class="mt-1 font-semibold text-slate-800">{{ \App\Models\Listing::TENANT_PREFERENCES[$listing->preferred_tenant] ?? 'Not specified' }}</dd></div>
+
+                        <section class="pt-7" aria-labelledby="room-details-heading">
+                            <h2 id="room-details-heading" class="text-base font-bold text-slate-900">Room Details</h2>
+                            <dl class="mt-4 grid grid-cols-1 divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white/70 text-sm sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                                <div class="p-4"><dt class="text-xs font-medium text-slate-500">Available From</dt><dd class="mt-1 font-semibold text-slate-800">{{ $listing->available_from?->format('d M Y') ?? 'Not specified' }}</dd></div>
+                                <div class="p-4"><dt class="text-xs font-medium text-slate-500">Rental Period</dt><dd class="mt-1 font-semibold text-slate-800">{{ \App\Models\Listing::RENTAL_PERIODS[$listing->rental_period] ?? 'Not specified' }}</dd></div>
+                                <div class="p-4"><dt class="text-xs font-medium text-slate-500">Preferred Tenant</dt><dd class="mt-1 font-semibold text-slate-800">{{ \App\Models\Listing::TENANT_PREFERENCES[$listing->preferred_tenant] ?? 'Not specified' }}</dd></div>
                             </dl>
                         </section>
-                        <section class="pt-7" aria-labelledby="facilities-heading">
+                        <section class="pt-9" aria-labelledby="facilities-heading">
                             <h2 id="facilities-heading" class="text-base font-bold text-slate-900">Facilities</h2>
-                            <ul class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm text-slate-600">
+                            <ul class="mt-4 grid max-w-lg grid-cols-1 gap-x-5 gap-y-3 text-sm text-slate-600 sm:grid-cols-2">
                                 @forelse($listing->facilities ?? [] as $facility)
-                                    <li><i class="fa-solid fa-check mr-2 text-emerald-600" aria-hidden="true"></i>{{ \App\Models\Listing::FACILITIES[$facility] ?? $facility }}</li>
+                                    <li><i class="fa-solid fa-check mr-2 text-emerald-600" aria-hidden="true"></i>{{ \App\Models\Listing::FACILITIES[$facility] ?? ucwords(str_replace('_', ' ', $facility)) }}</li>
                                 @empty
                                     <li>Facilities not specified.</li>
                                 @endforelse
                             </ul>
                         </section>
 
-                        <section id="description" class="pt-7" aria-labelledby="description-heading">
-                            <h2 id="description-heading" class="text-base font-bold text-slate-900">Room Description</h2>
-                            <p class="mt-4 whitespace-pre-line text-sm font-medium leading-7 text-slate-600">{{ $listing->listing_description }}</p>
+                        <section id="description" class="pt-9" aria-labelledby="description-heading">
+                            <h2 id="description-heading" class="text-base font-bold text-slate-900">Description</h2>
+                            @php
+                                $descriptionParagraphs = preg_split('/\R\s*\R/u', trim($listing->listing_description ?? ''), -1, PREG_SPLIT_NO_EMPTY);
+                            @endphp
+                            <div class="mt-4 space-y-4 break-words text-sm leading-7 text-slate-600">
+                                @forelse($descriptionParagraphs as $paragraph)
+                                    <p class="whitespace-pre-line">{{ $paragraph }}</p>
+                                @empty
+                                    <p>No description provided.</p>
+                                @endforelse
+                            </div>
                         </section>
+
 
                     </div>
 
@@ -510,6 +521,7 @@
             document.getElementById('final_reason').value = selectedReason;
         }
     }
+
 </script>
 
 </body>

@@ -310,20 +310,6 @@
                                 >
 
                                     <option
-                                        value="Single"
-                                        {{ old('room_type', $listing->room_type) == 'Single' ? 'selected' : '' }}
-                                    >
-                                        Single
-                                    </option>
-
-                                    <option
-                                        value="Shared"
-                                        {{ old('room_type', $listing->room_type) == 'Shared' ? 'selected' : '' }}
-                                    >
-                                        Shared
-                                    </option>
-
-                                    <option
                                         value="Master"
                                         {{ old('room_type', $listing->room_type) == 'Master' ? 'selected' : '' }}
                                     >
@@ -331,10 +317,17 @@
                                     </option>
 
                                     <option
-                                        value="Studio"
-                                        {{ old('room_type', $listing->room_type) == 'Studio' ? 'selected' : '' }}
+                                        value="Middle"
+                                        {{ old('room_type', $listing->room_type) == 'Middle' ? 'selected' : '' }}
                                     >
-                                        Studio
+                                        Middle
+                                    </option>
+
+                                    <option
+                                        value="Single"
+                                        {{ old('room_type', $listing->room_type) == 'Single' ? 'selected' : '' }}
+                                    >
+                                        Single
                                     </option>
 
                                 </select>
@@ -641,9 +634,11 @@
                                     <input
                                         type="file"
                                         name="photo"
+                                        id="mainPhotoInput"
                                         accept="image/jpeg,image/png,image/webp"
                                         class="hidden"
                                         onchange="showSelectedMainPhoto(this)"
+                                        oncancel="showSelectedMainPhoto(this)"
                                     >
 
                                 </label>
@@ -655,6 +650,7 @@
                                     id="mainPhotoName"
                                     class="mt-3 hidden truncate rounded-lg bg-blue-50 px-3 py-2 text-[10px] font-medium text-blue-600"
                                 ></p>
+                                <button type="button" id="undoMainPhoto" class="mt-2 hidden text-xs font-semibold text-blue-600" onclick="resetMainPhoto()">Keep original main photo</button>
 
                             </div>
 
@@ -708,6 +704,7 @@
                                         multiple
                                         class="hidden"
                                         onchange="showSelectedPhotos(this)"
+                                        oncancel="showSelectedPhotos(this)"
                                     >
 
                                 </label>
@@ -1029,8 +1026,7 @@
        KEYBOARD CONTROLS
     ========================================================= */
 
-    document.addEventListener(
-        'keydown',
+    document.addEventListener('keydown',
         function(event) {
 
             const viewer =
@@ -1078,42 +1074,45 @@
        MAIN PHOTO SELECTED
     ========================================================= */
 
+    const originalMainPhoto = document.getElementById('currentMainPhoto')?.src;
+    let selectedMainFile = null;
+    let mainPreviewVersion = 0;
+    let selectedAdditionalFiles = [];
+
+    function setInputFiles(input, files) {
+        const transfer = new DataTransfer();
+        files.forEach(file => transfer.items.add(file));
+        input.files = transfer.files;
+    }
+
     function showSelectedMainPhoto(input) {
-
-        const nameBox =
-            document.getElementById('mainPhotoName');
-
-
-        if (
-            input.files &&
-            input.files.length > 0
-        ) {
-
-            const reader = new FileReader();
-
-            reader.onload = function (event) {
-                const currentMainPhoto =
-                    document.getElementById('currentMainPhoto');
-
-                if (currentMainPhoto) {
-                    currentMainPhoto.src = event.target.result;
-                }
-            };
-
-            reader.readAsDataURL(input.files[0]);
-
-            nameBox.textContent =
-                'Selected: ' +
-                input.files[0].name;
-
-            nameBox.classList.remove('hidden');
-
-        } else {
-
-            nameBox.classList.add('hidden');
-
+        if (!input.files?.length) {
+            setInputFiles(input, selectedMainFile ? [selectedMainFile] : []);
+            return;
         }
+        selectedMainFile = input.files[0];
+        const version = ++mainPreviewVersion;
+        const reader = new FileReader();
+        reader.onload = () => {
+            if (version !== mainPreviewVersion) return;
+            const image = document.getElementById('currentMainPhoto');
+            if (image) image.src = reader.result;
+        };
+        reader.readAsDataURL(selectedMainFile);
+        const nameBox = document.getElementById('mainPhotoName');
+        nameBox.textContent = 'Selected: ' + selectedMainFile.name;
+        nameBox.classList.remove('hidden');
+        document.getElementById('undoMainPhoto').classList.remove('hidden');
+    }
 
+    function resetMainPhoto() {
+        selectedMainFile = null;
+        document.getElementById('mainPhotoInput').value = '';
+        const image = document.getElementById('currentMainPhoto');
+        if (image && originalMainPhoto) image.src = originalMainPhoto;
+        mainPreviewVersion++;
+        document.getElementById('mainPhotoName').classList.add('hidden');
+        document.getElementById('undoMainPhoto').classList.add('hidden');
     }
 
     function removePhotoCard(input) {
@@ -1132,6 +1131,16 @@
     ========================================================= */
 
     function showSelectedPhotos(input) {
+        for (const file of Array.from(input.files || [])) {
+            if (!selectedAdditionalFiles.some(existing => existing.name === file.name && existing.size === file.size && existing.lastModified === file.lastModified)) {
+                selectedAdditionalFiles.push(file);
+            }
+        }
+        setInputFiles(input, selectedAdditionalFiles);
+        renderSelectedPhotos(input);
+    }
+
+    function renderSelectedPhotos(input) {
 
         const box =
             document.getElementById('selectedPhotos');
@@ -1163,14 +1172,14 @@
             preview.classList.add('hidden');
 
             Array.from(input.files).forEach(function (file, index) {
-                const reader = new FileReader();
-
-                reader.onload = function (event) {
+                {
                     const photoBox = document.createElement('div');
                     photoBox.className = 'new-photo-card group relative overflow-hidden rounded-xl border border-emerald-200 bg-slate-100';
 
                     const image = document.createElement('img');
-                    image.src = event.target.result;
+                    const reader = new FileReader();
+                    reader.onload = () => { image.src = reader.result; };
+                    reader.readAsDataURL(file);
                     image.alt = file.name;
                     image.className = 'h-44 w-full object-cover transition duration-300 group-hover:scale-105';
 
@@ -1197,9 +1206,7 @@
                         preview.appendChild(photoBox);
                         preview.classList.remove('hidden');
                     }
-                };
-
-                reader.readAsDataURL(file);
+                }
             });
 
         } else {
@@ -1216,18 +1223,11 @@
 
     function removeSelectedNewPhoto(index) {
         const input = document.getElementById('photos');
-        const files = Array.from(input.files);
-        const dataTransfer = new DataTransfer();
-
-        files.forEach(function (file, fileIndex) {
-            if (fileIndex !== index) {
-                dataTransfer.items.add(file);
-            }
-        });
-
-        input.files = dataTransfer.files;
-        showSelectedPhotos(input);
+        selectedAdditionalFiles.splice(index, 1);
+        setInputFiles(input, selectedAdditionalFiles);
+        renderSelectedPhotos(input);
     }
+
 
 </script>
 

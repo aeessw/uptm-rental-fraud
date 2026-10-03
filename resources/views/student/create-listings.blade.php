@@ -53,6 +53,10 @@
         <div class="p-4 sm:p-6">
             <div class="w-full space-y-5">
 
+                <div class="flex items-start gap-2 rounded-xl bg-indigo-50 px-4 py-3 text-sm text-indigo-700">
+                    <i class="fa-solid fa-circle-info mt-0.5 shrink-0" aria-hidden="true"></i>
+                    <p><strong class="font-semibold">Listing Guidelines:</strong> You can have up to 2 listings at a time, including pending and hidden listings. New listings will only be visible after MPP approval.</p>
+                </div>
                 <!-- Validation Errors Alert -->
                 @if ($errors->any())
                     <div class="flex items-start space-x-3 rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 text-xs font-semibold text-rose-800">
@@ -114,8 +118,9 @@
                                                 class="w-full cursor-pointer appearance-none rounded-xl border border-slate-200/80 bg-slate-50/80 px-4 py-2.5 pr-9 text-xs font-semibold text-slate-600 transition focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
                                                 required>
                                             <option value="" disabled {{ old('room_type') ? '' : 'selected' }}>Select Room Type</option>
-                                            <option value="Single" {{ old('room_type') == 'Single' ? 'selected' : '' }}>Single Room</option>
-                                            <option value="Shared" {{ old('room_type') == 'Shared' ? 'selected' : '' }}>Shared Room</option>
+                                            <option value="Master" {{ old('room_type') == 'Master' ? 'selected' : '' }}>Master</option>
+                                            <option value="Middle" {{ old('room_type') == 'Middle' ? 'selected' : '' }}>Middle</option>
+                                            <option value="Single" {{ old('room_type') == 'Single' ? 'selected' : '' }}>Single</option>
                                         </select>
                                         <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
                                             <i class="fa-solid fa-chevron-down text-[10px]"></i>

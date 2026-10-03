@@ -59,29 +59,62 @@ class MppController extends Controller
     /**
      * Remove listing.
      */
-    public function removeListing(Request $request, $id)
+    public function removeListing(Request $request, $id, bool $reject = false)
     {
         $data = $request->validate(['reason' => ['required', \Illuminate\Validation\Rule::in(['Fraud reports', 'Fraud / Scam', 'Misleading information', 'Duplicate listing', 'Inappropriate Content', 'Other'])], 'note' => ['nullable', 'string', 'max:100', 'required_if:reason,Other']]);
-        \Illuminate\Support\Facades\DB::transaction(function () use ($id, $data) {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($id, $data, $reject) {
             $listing = Listing::whereKey($id)->lockForUpdate()->firstOrFail();
-            $listing->update(['listing_status' => 'hidden']);
-            AuditLogger::log(Auth::id(), 'removed_listing', 'Listing ID: '.$listing->getKey().' | Reason: '.$data['reason'].' | Note: '.($data['note'] ?? ''));
+            abort_if($reject && $listing->review_status === 'rejected', 409);
+            $listing->update(['listing_status' => 'hidden', 'hidden_by_suspension' => false]);
+            if ($reject) {
+                $listing->update(['review_status' => 'rejected']);
+                \Illuminate\Support\Facades\DB::table('listing_notifications')->insert([
+                    'user_id' => $listing->user_id, 'listing_id' => $listing->getKey(),
+                    'notification_decision' => 'rejected', 'notification_reason' => $data['reason'], 'notification_created_at' => now(),
+                ]);
+            }
+            AuditLogger::log(Auth::id(), $reject ? 'rejected_listing' : 'removed_listing', 'Listing ID: '.$listing->getKey().' | Reason: '.$data['reason'].' | Note: '.($data['note'] ?? ''));
         });
 
         return back()->with(
             'success',
-            'Listing has been hidden.'
+            $reject ? 'Listing rejected and hidden.' : 'Listing has been hidden.'
         );
     }
 
     /**
      * Restore listing.
      */
+    public function rejectListing(Request $request, $id)
+    {
+        return $this->removeListing($request, $id, true);
+    }
+
+    public function approveListing($id)
+    {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($id) {
+            $listing = Listing::whereKey($id)->lockForUpdate()->firstOrFail();
+            abort_if($listing->review_status === 'approved', 409);
+            abort_if($listing->user->user_suspended, 403);
+            $listing->update(['review_status' => 'approved', 'listing_status' => 'active', 'hidden_by_suspension' => false]);
+            \Illuminate\Support\Facades\DB::table('listing_notifications')->insert([
+                'user_id' => $listing->user_id, 'listing_id' => $listing->getKey(), 'notification_decision' => 'approved', 'notification_created_at' => now(),
+            ]);
+            AuditLogger::log(Auth::id(), 'approved_listing', 'Listing ID: '.$listing->getKey());
+        });
+
+        return back()->with('success', 'Listing approved and published.');
+    }
+
     public function restoreListing($id)
     {
         $listing = Listing::findOrFail($id);
+        abort_unless($listing->listing_status === 'hidden', 409);
+        abort_if($listing->user->user_suspended, 403);
 
+        abort_unless($listing->review_status === 'approved', 409, 'Approve this listing before restoring it.');
         $listing->listing_status = 'active';
+        $listing->hidden_by_suspension = false;
         $listing->save();
 
         // Record MPP action
@@ -110,8 +143,8 @@ class MppController extends Controller
         ]);
         \Illuminate\Support\Facades\DB::transaction(function () use ($request, $user, $data) {
             $user->update(['user_suspended' => true]);
-            $hidden = $request->boolean('hide_listings')
-                ? $user->listings()->where('listing_status', 'active')->update(['listing_status' => 'hidden']) : 0;
+            $hidden = $user->listings()->where('listing_status', 'active')
+                ->update(['listing_status' => 'hidden', 'hidden_by_suspension' => true]);
             AuditLogger::log(Auth::id(), 'suspended_user', 'User ID: '.$user->getKey().' | Reason: '.$data['reason'].' | Note: '.($data['note'] ?? '').' | Listings hidden: '.$hidden);
         });
         return back()->with('success', 'Student suspended and reason recorded.');
@@ -124,16 +157,14 @@ class MppController extends Controller
     {
         $user = User::where('user_role', 'student')->findOrFail($id);
 
-        $user->update([
-            'user_suspended' => false,
-        ]);
-
-        // Record MPP action
-        AuditLogger::log(
-            Auth::id(),
-            'unsuspended_user',
-            'User ID: ' . $user->getKey()
-        );
+        \Illuminate\Support\Facades\DB::transaction(function () use ($user) {
+            $user->update(['user_suspended' => false]);
+            $restored = $user->listings()->where('hidden_by_suspension', true)->where('review_status', 'approved')
+                ->where('listing_status', 'hidden')
+                ->update(['listing_status' => 'active', 'hidden_by_suspension' => false]);
+            AuditLogger::log(Auth::id(), 'unsuspended_user',
+                'User ID: '.$user->getKey().' | Listings restored: '.$restored);
+        });
 
         return back()->with(
             'success',
@@ -147,7 +178,7 @@ class MppController extends Controller
         $request->validate(['listing_id' => 'nullable|integer|exists:listings,listing_id']);
         $listings = Listing::with(['user', 'photos', 'reports' => fn ($query) => $query->latest()->limit(5)])->withCount('reports as report_count')->when($request->filled('listing_id'), fn ($query) => $query->whereKey($request->integer('listing_id')))->when($request->filled('user_id'), fn ($query) => $query->where('user_id', $request->integer('user_id')))->latest()->get();
 
-        $history = \App\Models\AuditLog::with('user')->whereIn('audit_action', ['removed_listing', 'hidden_listing', 'restored_listing', 'listing_auto_hidden'])->latest()->get()->groupBy(fn ($log) => $log->listingId());
+        $history = \App\Models\AuditLog::with('user')->whereIn('audit_action', ['approved_listing', 'rejected_listing', 'removed_listing', 'hidden_listing', 'restored_listing', 'listing_auto_hidden'])->latest()->get()->groupBy(fn ($log) => $log->listingId());
         foreach ($listings as $listing) $listing->setRelation('moderationHistory', $history->get($listing->getKey(), collect())->take(5));
         return view('mpp.listings', compact('listings'));
     }
@@ -173,7 +204,7 @@ class MppController extends Controller
             ->latest()
             ->get();
 
-        $history = \App\Models\AuditLog::with('user')->whereIn('audit_action', ['removed_listing', 'hidden_listing', 'restored_listing', 'listing_auto_hidden'])->latest()->get()->groupBy(fn ($log) => $log->listingId());
+        $history = \App\Models\AuditLog::with('user')->whereIn('audit_action', ['approved_listing', 'rejected_listing', 'removed_listing', 'hidden_listing', 'restored_listing', 'listing_auto_hidden'])->latest()->get()->groupBy(fn ($log) => $log->listingId());
         foreach ($reportedListings as $listing) $listing->setRelation('moderationHistory', $history->get($listing->getKey(), collect())->take(5));
         return view('mpp.reports', compact('reportedListings'));
     }

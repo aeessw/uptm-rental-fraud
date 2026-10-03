@@ -15,7 +15,7 @@ class SavedListingsTest extends TestCase
     {
         $student = User::factory()->create(['user_role' => 'student']);
         $owner = User::factory()->create(['user_role' => 'student']);
-        $room = Listing::create(['user_id' => $owner->getKey(), 'listing_title' => 'Saved room', 'listing_description' => 'Room', 'listing_location' => 'Cheras', 'listing_rent' => 450, 'room_type' => 'Single', 'listing_status' => 'active', 'listing_availability' => 'available']);
+        $room = Listing::create(['user_id' => $owner->getKey(), 'listing_title' => 'Saved room', 'listing_description' => 'Room', 'listing_location' => 'Cheras', 'listing_rent' => 450, 'room_type' => 'Single', 'listing_status' => 'active', 'review_status' => 'approved', 'listing_availability' => 'available']);
         $student->savedListings()->attach($room, ['save_created_at' => now()->subDays(2), 'save_updated_at' => now()->subDays(2)]);
         $this->actingAs($student)->get(route('student.saved'))->assertOk()->assertSee('Saved room');
         $this->get(route('student.listings'))->assertOk()->assertSee('Saved room');
@@ -40,7 +40,7 @@ class SavedListingsTest extends TestCase
     {
         $student = User::factory()->create(['user_role' => 'student']);
         foreach (['available', 'rented'] as $availability) {
-            Listing::create(['user_id' => $student->getKey(), 'listing_title' => 'Room '.$availability, 'listing_description' => 'Room', 'listing_location' => 'Cheras', 'listing_rent' => 450, 'room_type' => 'Single', 'listing_status' => 'active', 'listing_availability' => $availability]);
+            Listing::create(['user_id' => $student->getKey(), 'listing_title' => 'Room '.$availability, 'listing_description' => 'Room', 'listing_location' => 'Cheras', 'listing_rent' => 450, 'room_type' => 'Single', 'listing_status' => 'active', 'review_status' => 'approved', 'listing_availability' => $availability]);
         }
         $this->actingAs($student)->get(route('student.dashboard'))->assertOk()
             ->assertSee('Room available')->assertDontSee('Room rented')
@@ -53,7 +53,7 @@ class SavedListingsTest extends TestCase
         $student = User::factory()->create(['user_role' => 'student']);
         $owner = User::factory()->create(['user_role' => 'student']);
         foreach ([['Older cheap room', 400, 5, 1], ['Newer expensive room', 800, 1, 3]] as [$title, $rent, $age, $savedAge]) {
-            $room = Listing::create(['user_id' => $owner->getKey(), 'listing_title' => $title, 'listing_description' => 'Room', 'listing_location' => 'Cheras', 'listing_rent' => $rent, 'room_type' => 'Single', 'listing_status' => 'active', 'listing_availability' => 'available']);
+            $room = Listing::create(['user_id' => $owner->getKey(), 'listing_title' => $title, 'listing_description' => 'Room', 'listing_location' => 'Cheras', 'listing_rent' => $rent, 'room_type' => 'Single', 'listing_status' => 'active', 'review_status' => 'approved', 'listing_availability' => 'available']);
             $room->forceFill(['listing_created_at' => now()->subDays($age)])->save();
             $student->savedListings()->attach($room, ['save_created_at' => now()->subDays($savedAge), 'save_updated_at' => now()]);
         }

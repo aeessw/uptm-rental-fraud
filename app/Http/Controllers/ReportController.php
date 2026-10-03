@@ -46,6 +46,7 @@ class ReportController extends Controller
         if ($listing->fresh()->report_count >= 3) {
             $listing->update([
                 'listing_status' => 'hidden',
+                'hidden_by_suspension' => false,
             ]);
 
             // Record automatic hiding in audit log
@@ -78,7 +79,11 @@ class ReportController extends Controller
             }
         }
 
-        return back()->with(
+        $redirect = Listing::visibleTo($request->user())->whereKey($listing->getKey())->exists()
+            ? back()
+            : redirect()->route('student.listings');
+
+        return $redirect->with(
             'success',
             'Listing reported successfully.'
         );

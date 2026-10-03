@@ -72,11 +72,12 @@
                     </div>
                 </section>
 
-                <section class="mt-6 bg-white rounded-2xl border border-slate-200 p-6 md:p-8" aria-labelledby="my-listings-heading">
+                <p id="pagination-status" role="status" class="mt-4 text-sm text-slate-600" hidden></p>
+                <section id="profile-listings" class="mt-6 bg-white rounded-2xl border border-slate-200 p-6 md:p-8" aria-labelledby="my-listings-heading">
                     <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
                         <div>
-                            <h2 id="my-listings-heading">My Listings <span class="text-sm font-medium text-slate-500">({{ $listings->total() }})</span></h2>
-                            <p class="text-sm text-slate-500 mt-1">View and manage the rooms you have posted.</p>
+                            <h2 id="my-listings-heading" tabindex="-1">My Listings <span class="text-sm font-medium text-slate-500">({{ $listings->total() }})</span></h2>
+                            <p class="text-sm text-slate-500 mt-1">You can have up to two posts. Posts stay hidden until MPP approves them.</p>
                         </div>
                         <a href="{{ route('student.listings.create') }}" class="inline-flex items-center justify-center min-h-11 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">Post a Room</a>
                     </div>
@@ -94,7 +95,8 @@
                                 <div class="flex-1 min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h3 class="break-words">{{ $listing->listing_title }}</h3>
-                                        <span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $listing->listing_status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600' }}">{{ ucfirst($listing->listing_status) }}</span>
+                                        <span class="rounded-full bg-indigo-50 px-2.5 py-1 text-xs text-indigo-700">{{ ucfirst($listing->listing_status) }}</span>
+                                        <span class="rounded-full px-2.5 py-1 text-xs font-medium {{ ($listing->listing_availability ?? 'available') === 'available' ? 'bg-emerald-50 text-emerald-700' : ($listing->listing_availability === 'rented' ? 'bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-600') }}">{{ ucfirst($listing->listing_availability ?? 'available') }}</span>
                                     </div>
                                     <p class="mt-1 text-sm text-slate-500 break-words">{{ $listing->listing_location }}</p>
                                     <p class="mt-2 text-sm"><span class="font-semibold text-indigo-600">RM {{ number_format($listing->listing_rent, 2) }}</span><span class="text-slate-500"> / month &middot; {{ $listing->room_type }}</span></p>
@@ -113,11 +115,12 @@
                     </div>
 
                     @if($listings->hasPages())
-                        <div class="mt-6">{{ $listings->links() }}</div>
+                        <div data-profile-pagination class="mt-6">{{ $listings->links() }}</div>
                     @endif
                 </section>
             </div>
         </main>
     </div>
+    <script src="{{ asset('js/profile-pagination.js') }}" defer></script>
 </body>
 </html>

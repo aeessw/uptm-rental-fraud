@@ -61,7 +61,7 @@
             @endif
 
             <!-- Filter Bar -->
-            <form action="{{ route('student.listings') }}"
+            <form id="listing-filters" action="{{ route('student.listings') }}"
                   method="GET"
                   class="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200/60 bg-white p-3 shadow-xs">
 
@@ -99,8 +99,9 @@
                 <select name="room_type"
                         class="rounded-xl border border-slate-200/80 bg-white px-3 py-2 text-xs font-semibold text-slate-600 transition focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20">
                     <option value="">All Room Types</option>
+                    <option value="Master" {{ request('room_type') == 'Master' ? 'selected' : '' }}>Master</option>
+                    <option value="Middle" {{ request('room_type') == 'Middle' ? 'selected' : '' }}>Middle</option>
                     <option value="Single" {{ request('room_type') == 'Single' ? 'selected' : '' }}>Single</option>
-                    <option value="Shared" {{ request('room_type') == 'Shared' ? 'selected' : '' }}>Shared</option>
                 </select>
 
                 <!-- Sort Select -->
@@ -121,23 +122,17 @@
                     <option value="5+" @selected(request('pax') === '5+')>5+ pax</option>
                 </select>
 
-                <!-- Apply Filters Button -->
-                <button type="submit"
-                        class="rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-brand-700 active:scale-95">
-                    <i class="fa-solid fa-filter mr-1.5"></i>
-                    Apply Filters
-                </button>
-
                 <!-- Clear Filters Button -->
-                @if(request()->hasAny(['search', 'location', 'rent', 'room_type', 'sort', 'pax']))
-                    <a href="{{ route('student.listings') }}"
+                    <a id="clear-listing-filters" data-clear-filters @if(!request()->hasAny(['search', 'location', 'rent', 'room_type', 'sort', 'pax'])) hidden @endif href="{{ route('student.listings') }}"
                        class="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50">
                         <i class="fa-solid fa-xmark mr-1.5"></i>
                         Clear
                     </a>
-                @endif
             </form>
 
+            <p id="listing-filter-error" role="alert" hidden class="text-xs text-rose-600"></p>
+            <p id="listing-filter-status" role="status" class="sr-only"></p>
+            <section id="listing-results" aria-label="Room listing results" data-total="{{ $listings->total() }}" class="space-y-6">
             <!-- Active Filters Notification Bar -->
             @if(request()->hasAny(['search', 'location', 'rent', 'room_type', 'sort', 'pax']))
                 <div class="flex items-center justify-between rounded-2xl border border-brand-100 bg-brand-50/50 px-4 py-3">
@@ -170,7 +165,7 @@
                                         </div>
                                     @endif
 
-                                    @if((string) $listing->user_id === (string) Auth::id() || $listing->listing_availability !== 'available')
+                                    @if(($listing->listing_availability ?? 'available') !== 'available')
                                     <span class="absolute left-3 top-3 z-10 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold shadow-sm {{ $listing->listing_availability === 'available' ? 'bg-emerald-100 text-emerald-700' : ($listing->listing_availability === 'rented' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600') }}">
                                         <span class="h-1.5 w-1.5 rounded-full {{ $listing->listing_availability === 'available' ? 'bg-emerald-500' : ($listing->listing_availability === 'rented' ? 'bg-rose-500' : 'bg-slate-500') }}"></span>
                                         {{ ucfirst($listing->listing_availability ?? 'available') }}
@@ -247,7 +242,7 @@
 
                 <!-- Pagination -->
                 @if($listings->hasPages())
-                    <div class="mt-6 flex justify-center">
+                    <div class="mt-6 flex justify-center" data-listing-pagination>
                         {{ $listings->links() }}
                     </div>
                 @endif
@@ -262,22 +257,26 @@
                     <h4 class="mt-4 text-xs font-bold uppercase tracking-wider text-slate-900">No Listings Found</h4>
                     <p class="mt-1 text-xs text-slate-400">No room listings match your current search filters.</p>
 
-                    <a href="{{ route('student.listings') }}"
+                    <a data-clear-filters href="{{ route('student.listings') }}"
                        class="mt-4 inline-flex items-center space-x-2 rounded-xl bg-brand-600 px-4 py-2 text-xs font-bold text-white transition hover:bg-brand-700">
                         <i class="fa-solid fa-rotate-left"></i>
                         <span>Clear Filters</span>
                     </a>
                 </div>
             @endif
+            </section>
 
         </div>
     </main>
 
 </div>
 
+<script src="{{ asset('js/listing-filters.js') }}" defer></script>
+
 <script>
-    document.querySelectorAll('.save-listing-form').forEach((form) => {
-        form.addEventListener('submit', async (event) => {
+    document.addEventListener('submit', async (event) => {
+            const form = event.target;
+            if (!form.matches('.save-listing-form')) return;
             event.preventDefault();
 
             const button = form.querySelector('.save-listing-button');
@@ -308,7 +307,6 @@
             } finally {
                 button.disabled = false;
             }
-        });
     });
 </script>
 

@@ -1,26 +1,23 @@
 * { box-sizing: border-box; }
 html { line-height: 1.5; font-family: ui-sans-serif, system-ui, sans-serif; }
 body, h1, h2, h3, p { margin: 0; }
-.welcome-page { min-height: 100vh; min-height: 100svh; display: flex; align-items: center; justify-content: center; padding: 16px; background-size: cover; background-position: center; background-repeat: no-repeat; position: relative; }
-.welcome-overlay { position: absolute; inset: 0; background: rgb(0 0 0 / 20%); backdrop-filter: blur(1px); }
-.welcome-card { background: white; max-width: 576px; width: 100%; min-width: 0; padding: 48px 32px; text-align: center; box-shadow: 0 25px 50px -12px rgb(0 0 0 / 25%); position: relative; z-index: 1; }
-.welcome-heading { margin-bottom: 24px; display: flex; flex-direction: column; align-items: center; }
-.welcome-logo { display: block; height: 96px; width: auto; max-width: 100%; object-fit: contain; margin-bottom: 24px; }
-.welcome-title { font-family: 'Montserrat', sans-serif; font-size: 24px; line-height: 1.3; font-weight: 900; font-style: normal; color: #0a1128; letter-spacing: .025em; text-transform: uppercase; }
-.welcome-description { font-size: 12px; color: #4b5563; line-height: 1.625; margin-bottom: 32px; padding: 0 16px; }
-.welcome-error { background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 16px; margin-bottom: 32px; text-align: left; display: flex; align-items: flex-start; gap: 12px; }
+.welcome-page { min-height: 100vh; min-height: 100svh; display: flex; align-items: center; justify-content: center; padding: 16px; background-color: #0f172a; position: relative; }
+.welcome-card { background: white; max-width: 576px; width: 100%; min-width: 0; padding: 32px 24px; text-align: center; box-shadow: 0 25px 50px -12px rgb(0 0 0 / 25%); position: relative; z-index: 1; }
+.welcome-heading { margin-bottom: 16px; display: flex; flex-direction: column; align-items: center; }
+.welcome-title { font-family: 'Poppins', sans-serif; font-size: clamp(20px, 4vw, 24px); line-height: 1.35; font-weight: 700; font-style: normal; color: #0a1128; letter-spacing: .025em; text-transform: uppercase; }
+.welcome-description { max-width: 448px; margin: 0 auto 32px; font-size: 14px; color: #4b5563; line-height: 1.625; }
+.welcome-error { background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 16px; margin-bottom: 24px; text-align: left; display: flex; align-items: flex-start; gap: 12px; }
 .welcome-error-icon { color: #ef4444; margin-top: 2px; flex-shrink: 0; }
 .welcome-error-title { font-size: 12px; font-weight: 700; color: #dc2626; }
 .welcome-error-message { font-size: 12px; color: #ef4444; margin-top: 4px; overflow-wrap: anywhere; }
-.welcome-login { display: flex; justify-content: center; margin-bottom: 32px; }
-.google-login { width: 100%; max-width: 384px; display: inline-flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 20px; background: white; color: #334155; font-weight: 600; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 8px; text-decoration: none; transition: background-color .15s, border-color .15s; }
+.welcome-login { display: flex; justify-content: center; margin-bottom: 24px; }
+.google-login { width: 100%; max-width: 384px; min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 12px; padding: 10px 20px; background: white; color: #334155; font-weight: 600; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 8px; text-decoration: none; transition: background-color .15s, border-color .15s; }
 .google-login:hover { background: #f8fafc; border-color: #94a3b8; }
 .google-login:focus-visible { outline: 2px solid #64748b; outline-offset: 3px; }
 .google-logo { width: 20px; height: 20px; flex-shrink: 0; }
-.welcome-footer { padding-top: 16px; font-size: 12px; color: #374151; overflow-wrap: anywhere; }
+.welcome-footer { max-width: 448px; margin: 0 auto; font-size: 12px; line-height: 1.6; color: #374151; overflow-wrap: anywhere; }
 .welcome-domain { font-weight: 700; color: #0a1128; }
 @media (min-width: 640px) {
     .welcome-page { padding: 24px; }
-    .welcome-card { padding: 64px 56px; }
-    .welcome-description { font-size: 14px; }
+    .welcome-card { padding: 48px 40px; }
 }
