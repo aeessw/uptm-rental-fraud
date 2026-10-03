@@ -23,7 +23,7 @@ class SecurityHeadersTest extends TestCase
         $this->actingAs($student);
         $this->assertSecurityHeaders($this->get('/student/dashboard')->assertOk());
         $this->assertSecurityHeaders($this->getJson(route('student.messages.unread-count'))->assertOk());
-        $this->assertSecurityHeaders($this->get('/mpp/dashboard')->assertRedirect('/'));
+        $this->assertSecurityHeaders($this->get('/mpp/dashboard')->assertForbidden());
 
         $admin = User::factory()->create(['user_role' => 'mpp']);
         $this->actingAs($admin);

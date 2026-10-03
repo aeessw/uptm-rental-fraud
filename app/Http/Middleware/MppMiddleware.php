@@ -14,14 +14,23 @@ class MppMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::check() && Auth::user()->user_role === 'mpp') {
-            return $next($request)->withHeaders([
-                'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
-                'Pragma' => 'no-cache',
-                'Expires' => '0',
-            ]);
+        // User is not logged in
+        if (!Auth::check()) {
+            return redirect('/')->with(
+                'error',
+                'Please login again to continue.'
+            );
         }
 
-        return redirect('/')->with('error', 'Unauthorized access.');
+        // User is logged in but is not MPP
+        if (Auth::user()->user_role !== 'mpp') {
+            abort(403, 'Unauthorized access.');
+        }
+
+        return $next($request)->withHeaders([
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ]);
     }
 }
