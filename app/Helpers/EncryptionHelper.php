@@ -8,6 +8,10 @@ class EncryptionHelper
     {
         $key = config('messages.aes_key');
 
+        if (!is_string($key) || $key === '') {
+            throw new \RuntimeException('Message encryption key is not configured.');
+        }
+
         $iv = openssl_random_pseudo_bytes(16);
 
         $encrypted = openssl_encrypt(
@@ -47,6 +51,17 @@ class EncryptionHelper
             $iv
         );
 
-        return $decrypted === false ? $ciphertext : $decrypted;
+        if ($decrypted !== false && mb_check_encoding($decrypted, 'UTF-8')) {
+            return $decrypted;
+        }
+
+        // Earlier deployments read env() after configuration was cached and
+        // encrypted messages with an empty key. Read those records only;
+        // encrypt() always requires the configured key for new messages.
+        $legacy = openssl_decrypt($encrypted, 'AES-256-CBC', '', 0, $iv);
+
+        return $legacy !== false && mb_check_encoding($legacy, 'UTF-8')
+            ? $legacy
+            : 'This message could not be decrypted.';
     }
 }
