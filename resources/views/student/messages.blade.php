@@ -129,7 +129,6 @@
                                                 </span>
                                             </div>
 
-                                            <p class="mb-1 truncate text-[10px] text-slate-400" title="{{ $chatUser->user_email }}">{{ $chatUser->user_email }}</p>
                                             @if($chatUser->user_suspended)
                                                 <p class="mb-1 text-[11px] font-semibold text-rose-700">Account Suspended</p>
                                             @endif
