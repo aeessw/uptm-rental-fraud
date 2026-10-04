@@ -144,7 +144,7 @@ class AuthController extends Controller
             return 'mpp';
         }
 
-        elseif ($email === 'aliafatini@gmail.com') {
+        elseif ($email === 'aliafatini21@gmail.com') {
             return 'student';
         }
 
