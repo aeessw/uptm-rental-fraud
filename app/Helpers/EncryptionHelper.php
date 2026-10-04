@@ -6,7 +6,7 @@ class EncryptionHelper
 {
     public static function encrypt($plaintext)
     {
-        $key = env('AES_KEY');
+        $key = config('messages.aes_key');
 
         $iv = openssl_random_pseudo_bytes(16);
 
@@ -27,7 +27,7 @@ class EncryptionHelper
             return $ciphertext;
         }
 
-        $key = env('AES_KEY');
+        $key = config('messages.aes_key');
 
         $data = base64_decode($ciphertext);
 
