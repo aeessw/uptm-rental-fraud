@@ -60,20 +60,23 @@ class AuthController extends Controller
                 );
             }
 
-            // Find existing user or create a new user instance
-            $user = User::firstOrCreate(
-                [
-                    'user_email' => $email,
-                ],
-                [
+            $user = User::firstOrNew(['user_email' => $email]);
+
+            if (!$user->exists) {
+                $user->fill([
                     'user_name' => $googleUser->getName() ?? 'UPTM User',
                     'google_id' => $googleUser->getId(),
                     'user_role' => $role,
-                    // Support existing databases where password is still required.
-                    // Students authenticate with Google, not this random password.
-                    'password' => Str::random(64),
-                ]
-            );
+                ]);
+
+                // Some deployments omit passwords for Google-only accounts.
+                // Older databases still require a value when creating a user.
+                if ($user->getConnection()->getSchemaBuilder()->hasColumn($user->getTable(), 'password')) {
+                    $user->password = Str::random(64);
+                }
+
+                $user->save();
+            }
 
             // Synchronize Google ID and role attributes for existing users
             $user->update([

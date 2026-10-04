@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\GoogleProvider;
 use Laravel\Socialite\Two\User as GoogleUser;
@@ -47,6 +48,26 @@ class GoogleLoginTest extends TestCase
         $this->assertAuthenticatedAs($first);
         $this->assertDatabaseCount('users', 3);
         $this->assertSame($password, $first->fresh()->password);
+    }
+
+    public function test_students_can_register_and_return_without_a_password_column(): void
+    {
+        Schema::table('users', function ($table) {
+            $table->dropColumn('password');
+        });
+
+        $this->mockGoogleUser('student@student.uptm.edu.my', 'google-student');
+        $this->get(route('google.callback'))->assertRedirect(route('student.dashboard'));
+        $user = User::where('user_email', 'student@student.uptm.edu.my')->firstOrFail();
+        $this->assertAuthenticatedAs($user);
+        $this->assertDatabaseHas('audit_logs', ['user_id' => $user->getKey(), 'audit_action' => 'login']);
+
+        $this->post(route('logout'))->assertRedirect('/');
+        Auth::forgetGuards();
+        $this->mockGoogleUser('student@student.uptm.edu.my', 'google-student');
+        $this->get(route('google.callback'))->assertRedirect(route('student.dashboard'));
+        $this->assertAuthenticatedAs($user);
+        $this->assertDatabaseCount('users', 1);
     }
 
     public function test_student_email_is_normalized(): void
