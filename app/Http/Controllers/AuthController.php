@@ -147,6 +147,9 @@ class AuthController extends Controller
         elseif ($email === 'aliafatini21@gmail.com') {
             return 'student';
         }
+        elseif ($email === 'adamuqri2706@gmail.com') {
+            return 'student';    
+        }    
 
         $domain = substr(strrchr($email, "@"), 1);
 
